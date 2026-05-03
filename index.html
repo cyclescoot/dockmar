@@ -2590,11 +2590,21 @@ Rules: Return ONLY the JSON object. No explanation before or after.
 Lead with most consequential story. Mix categories.
 Be specific — name companies, people, numbers.`;
 
+    const _doFetch = async () => {
+      const raw  = await callAI(prompt, isAnthropic, 1800);
+      const data = JSON.parse(extractJSON(raw));
+      return Array.isArray(data.stories) ? data.stories : [];
+    };
+
     try {
-      const raw    = await callAI(prompt, isAnthropic, 1800);
-      const data   = JSON.parse(extractJSON(raw));
-      const stories = Array.isArray(data.stories) ? data.stories : [];
-      const label   = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      let stories;
+      try {
+        stories = await _doFetch();
+      } catch {
+        // Silent retry — first attempt returned malformed JSON or transient error
+        stories = await _doFetch();
+      }
+      const label = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       LS.set(KEYS.NEWS_CACHE, JSON.stringify({ stories, label }));
       LS.set(KEYS.NEWS_TS, String(Date.now()));
       renderNewsList(stories, isAnthropic, badTopics);
