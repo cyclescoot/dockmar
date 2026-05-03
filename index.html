@@ -715,33 +715,6 @@
       margin-top: 8px;
     }
 
-    /* === CALENDAR EVENTS === */
-    .event-day-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.62rem;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 8px 0 4px;
-    }
-    .event-item {
-      display: flex;
-      gap: 12px;
-      padding: 8px 0;
-      border-bottom: 1px solid var(--border);
-      align-items: flex-start;
-    }
-    .event-item:last-child { border-bottom: none; }
-    .event-time {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--accent);
-      min-width: 52px;
-      padding-top: 2px;
-    }
-    .event-name { font-size: 0.86rem; font-weight: 500; }
-    .event-location { font-size: 0.76rem; color: var(--text-mid); margin-top: 2px; }
-
     /* === FINANCE === */
     .finance-summary-row {
       display: grid;
@@ -995,16 +968,6 @@
           <div id="weather-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
 
-        <!-- 2. CALENDAR -->
-        <div class="card" id="card-calendar">
-          <div class="card-header">
-            <span class="card-title">Calendar</span>
-            <div class="card-actions">
-              <button class="btn-icon" id="btn-calendar-expand" title="Expand">⤢</button>
-            </div>
-          </div>
-          <div id="calendar-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
-        </div>
 
         <!-- 3. FINANCE -->
         <div class="card" id="card-finance">
@@ -1245,12 +1208,6 @@
               Best with well-known public figures — e.g. Warren Buffett, Brené Brown, Steve Jobs
             </span>
           </div>
-          <div class="field">
-            <label class="field-label">Calendar iCal URL</label>
-            <input type="url" class="input" id="settings-calendar"
-              placeholder="https://… (Phase 2 — saved but not used yet)">
-            <span class="text-xxs text-dim font-mono">Direct iCal fetching coming in Phase 2</span>
-          </div>
         </div>
       </div>
 
@@ -1327,7 +1284,6 @@
     NEWS_TOPICS: 'newsTopics',
     COUNCIL:     'councilNames',
     FINANCE:     'financeData',
-    CAL_URL:     'calendarUrl',
     STYLES:      'customStyles',
     BRIEFING:        'briefingText',
     BRIEFING_TS:     'briefingTimestamp',
@@ -1600,7 +1556,6 @@
     initSettings();
     initCustomize();
     initWeather();
-    initCalendar();
     initFinance();
     initBriefing();
     initNews();
@@ -1613,7 +1568,6 @@
   function initSettings()     {}
   function initCustomize()    {}
   function initWeather()      {}
-  function initCalendar()     {}
   function initFinance()      {}
   function initBriefing()     {}
   function initNews()         {}
@@ -1918,7 +1872,6 @@
     const savedTopics = LS.get(KEYS.NEWS_TOPICS) || '';
     _settingsTopics = savedTopics ? savedTopics.split(',').map(t => t.trim()).filter(Boolean) : [];
     _renderTopicsTags();
-    document.getElementById('settings-calendar').value = LS.get(KEYS.CAL_URL)     || '';
     _renderSettingsTags();
     document.getElementById('settings-overlay').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -1975,8 +1928,6 @@
     const pendingTopic = document.getElementById('settings-topics-input').value.trim();
     if (pendingTopic && !_settingsTopics.includes(pendingTopic)) _settingsTopics.push(pendingTopic);
     const topics = _settingsTopics.join(', ');
-    const calUrl   = document.getElementById('settings-calendar').value.trim();
-
     LS.set(KEYS.PROVIDER, provider);
     if (newKey)  LS.setEncoded(KEYS.API_KEY, newKey);
     const modelVal = document.getElementById('settings-model').value.trim();
@@ -1984,7 +1935,6 @@
     if (modelKey) { if (modelVal) LS.set(modelKey, modelVal); else LS.remove(modelKey); }
     if (name)    LS.set(KEYS.USER_NAME, name);
     if (topics)  LS.set(KEYS.NEWS_TOPICS, topics);
-    if (calUrl)  LS.set(KEYS.CAL_URL, calUrl);
     LS.setJSON(KEYS.COUNCIL, _settingsCouncil);
 
     if (cityStr) {
@@ -2005,7 +1955,6 @@
     if (cityStr) initWeather();
     if (newKey) { hideBanner(); initFinance(); initQuickAnswers(); }
     // Always refresh these cards — their content depends on topics/names which just changed
-    initCalendar();
     if (LS.getDecoded(KEYS.API_KEY)) {
       initBriefing(); initNews(); initCouncil();
     } else {
@@ -2213,180 +2162,14 @@
   }
 
   // ═══════════════════════════════════════════════════════
-  // SECTION 7: CALENDAR CARD
+  // SECTION 7: CALENDAR CARD — removed in v1
+  // Re-add when iCal CORS is resolved (proxy or backend)
   // ═══════════════════════════════════════════════════════
 
-  function initCalendar() {
-    renderCalendar();
-  }
 
-  async function renderCalendar() {
-    const body   = document.getElementById('calendar-body');
-    const calUrl = LS.get(KEYS.CAL_URL);
-    const today  = new Date();
-    today.setHours(0, 0, 0, 0);
 
-    if (!calUrl) { _renderDemoCalendar(body, today); return; }
 
-    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
 
-    try {
-      const res = await fetch(calUrl);
-      if (!res.ok) throw new Error(`Calendar fetch failed (${res.status})`);
-      const ics    = await res.text();
-      const events = _parseICS(ics, today);
-      _renderCalendarEvents(body, events, today);
-    } catch (err) {
-      body.innerHTML = `
-        <div>
-          <div style="font-size:.75rem;color:var(--red);margin-bottom:10px;line-height:1.5">
-            Could not load calendar: ${escHtml(err.message)}<br>
-            <span style="color:var(--text-dim)">Check your iCal URL in ⚙️ Settings.</span>
-          </div>
-        </div>`;
-    }
-  }
-
-  function _parseICSDate(str) {
-    if (!str) return null;
-    const v = str.trim();
-    // UTC datetime: 20260503T090000Z
-    if (/^\d{8}T\d{6}Z$/.test(v))
-      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T${v.slice(9,11)}:${v.slice(11,13)}:${v.slice(13,15)}Z`);
-    // Local datetime: 20260503T090000
-    if (/^\d{8}T\d{6}$/.test(v))
-      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T${v.slice(9,11)}:${v.slice(11,13)}:${v.slice(13,15)}`);
-    // All-day date: 20260503
-    if (/^\d{8}$/.test(v))
-      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T00:00:00`);
-    return null;
-  }
-
-  function _parseICS(ics, today) {
-    // Unfold wrapped lines (ICS spec: continuation lines start with space or tab)
-    const text = ics.replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
-    const blocks = text.split('BEGIN:VEVENT');
-    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 14);
-    const events = [];
-
-    for (let i = 1; i < blocks.length; i++) {
-      const block = blocks[i];
-
-      // TODO: Add recurring event support (RRULE) in a future update.
-      // Recurring events require expanding recurrences across a date range
-      // per RFC 5545 §3.8.5.3 — non-trivial due to FREQ/INTERVAL/BYDAY/EXDATE rules.
-      if (/^RRULE:/m.test(block)) continue;
-
-      const get = key => {
-        const m = block.match(new RegExp(`^${key}(?:;[^:]*)?:(.+)`, 'm'));
-        return m ? m[1].trim() : null;
-      };
-
-      const summary = get('SUMMARY');
-      if (!summary) continue;
-      const dtstart = get('DTSTART');
-      if (!dtstart) continue;
-      const start = _parseICSDate(dtstart);
-      if (!start || start < today || start >= cutoff) continue;
-
-      events.push({
-        start,
-        name: summary.replace(/\\n/g, ' ').replace(/\\,/g, ','),
-        loc:  (get('LOCATION') || '').replace(/\\n/g, ' ').replace(/\\,/g, ','),
-      });
-    }
-
-    return events.sort((a, b) => a.start - b.start);
-  }
-
-  function _buildCalendarHtml(events, today) {
-    if (!events.length) return '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">No upcoming events in the next 14 days.</div>';
-    const groups = {};
-    events.forEach(ev => {
-      const key = ev.start.toDateString();
-      if (!groups[key]) groups[key] = { date: ev.start, evs: [] };
-      groups[key].evs.push(ev);
-    });
-    return Object.values(groups).map(({ date, evs }) => {
-      const diff = Math.round((date - today) / 86400000);
-      const label = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow'
-        : date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      const evRows = evs.map(ev => {
-        const time = ev.start.getHours() === 0 && ev.start.getMinutes() === 0
-          ? 'All day'
-          : ev.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-        return `<div class="event-item">
-          <div class="event-time">${time}</div>
-          <div>
-            <div class="event-name">${escHtml(ev.name)}</div>
-            ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
-          </div>
-        </div>`;
-      }).join('');
-      return `<div class="event-day-label">${label}</div>${evRows}`;
-    }).join('');
-  }
-
-  function _renderCalendarEvents(body, events, today) {
-    body.innerHTML = `
-      <div>
-        <div style="max-height:260px;overflow-y:auto;padding-right:2px;
-          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-          ${_buildCalendarHtml(events, today)}
-        </div>
-        <div style="margin-top:8px;font-size:.65rem;color:var(--text-dim);
-              font-family:'DM Mono',monospace;line-height:1.5">
-          Recurring events not shown · <button onclick="openSettings()"
-            style="background:none;border:none;color:var(--accent);cursor:pointer;
-              font-size:.65rem;font-family:'DM Mono',monospace;padding:0">update URL</button>
-        </div>
-      </div>`;
-  }
-
-  function _renderDemoCalendar(body, today) {
-    const DEMO = [
-      { d: 0, time: '9:00 AM',  name: 'Team standup',        loc: 'Zoom' },
-      { d: 0, time: '12:30 PM', name: 'Lunch with Sarah',    loc: 'The Blue Plate' },
-      { d: 0, time: '4:00 PM',  name: 'Focus block',         loc: '' },
-      { d: 1, time: '2:00 PM',  name: 'Dentist appointment', loc: 'Dr. Martinez Dental' },
-      { d: 2, time: '10:00 AM', name: 'Product review',      loc: 'Conference Room A' },
-      { d: 3, time: '3:30 PM',  name: 'Weekly 1:1',          loc: '' },
-      { d: 5, time: '7:00 AM',  name: 'Gym session',         loc: 'Fitness Center' },
-      { d: 6, time: '7:00 PM',  name: 'Birthday dinner',     loc: 'Casa Italiana' },
-    ];
-    const groups = {};
-    DEMO.forEach(ev => { if (!groups[ev.d]) groups[ev.d] = []; groups[ev.d].push(ev); });
-    let evHtml = '';
-    Object.keys(groups).sort((a, b) => a - b).forEach(offset => {
-      const d = new Date(today); d.setDate(d.getDate() + Number(offset));
-      const label = offset == 0 ? 'Today' : offset == 1 ? 'Tomorrow'
-        : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      evHtml += `<div class="event-day-label">${label}</div>`;
-      groups[offset].forEach(ev => {
-        evHtml += `<div class="event-item">
-          <div class="event-time">${ev.time}</div>
-          <div>
-            <div class="event-name">${escHtml(ev.name)}</div>
-            ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
-          </div>
-        </div>`;
-      });
-    });
-    body.innerHTML = `
-      <div>
-        <div style="max-height:260px;overflow-y:auto;padding-right:2px;
-          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-          ${evHtml}
-        </div>
-        <div style="margin-top:10px">
-          <button onclick="openSettings()"
-            style="font-size:.72rem;color:var(--accent);background:none;border:none;
-                   cursor:pointer;font-family:'DM Mono',monospace;padding:0">
-            + Connect your real calendar →
-          </button>
-        </div>
-      </div>`;
-  }
 
   // ═══════════════════════════════════════════════════════
   // SECTION 8: DAILY BRIEFING CARD
@@ -3591,7 +3374,6 @@ Return only the CSS rules, no explanation, no markdown.`;
   function initExpandButtons() {
     const map = [
       ['btn-weather-expand',  'Weather',       'weather-body'],
-      ['btn-calendar-expand', 'Calendar',      'calendar-body'],
       ['btn-finance-expand',  'Finance',       'finance-body'],
       ['btn-briefing-expand', 'Daily Briefing','briefing-body'],
       ['btn-news-expand',     'News',          'news-body'],
@@ -3876,7 +3658,6 @@ Question: ${question}`;
     initSettings();
     initCustomize();
     initWeather();
-    initCalendar();
     initFinance();
     initBriefing();
     setTimeout(() => initNews(), 3000);
