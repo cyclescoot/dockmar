@@ -862,7 +862,7 @@
             <div class="provider-icon" style="background:rgba(0,212,255,0.1)">✦</div>
             <div style="flex:1">
               <div class="provider-name">Anthropic Claude</div>
-              <div class="provider-detail">claude-sonnet-4-20250514 · live web search for news</div>
+              <div class="provider-detail">claude-sonnet-4-5 · live web search for news</div>
             </div>
           </button>
           <button class="provider-btn" data-provider="openai">
@@ -1540,7 +1540,7 @@
 
   async function _callAnthropic(key, prompt, useWebSearch, maxTokens) {
     const body = {
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     };
