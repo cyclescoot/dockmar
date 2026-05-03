@@ -2598,11 +2598,13 @@ ${data}`;
     const sectionLabel = t => `<div style="font-family:'DM Mono',monospace;font-size:.65rem;
       color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">${t}</div>`;
 
-    body.innerHTML =
-      summaryHtml
-      + (catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : '')
-      + (insightsHtml? sectionLabel('Insights') + `<div style="margin-bottom:14px">${insightsHtml}</div>` : '')
-      + subsHtml + chipsHtml + aiLine + saveHtml + chatHtml + privacyHtml;
+    body.innerHTML = `<div style="overflow-y:auto;max-height:580px;padding-right:4px;
+        scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+      ${summaryHtml}
+      ${catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : ''}
+      ${insightsHtml? sectionLabel('Insights')             + `<div style="margin-bottom:14px">${insightsHtml}</div>` : ''}
+      ${subsHtml}${chipsHtml}${aiLine}${saveHtml}${chatHtml}${privacyHtml}
+    </div>`;
 
     // Wire chips
     body.querySelectorAll('#finance-chips .question-chip').forEach(chip => {
