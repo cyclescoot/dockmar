@@ -2534,8 +2534,9 @@ Be specific — name companies, people, numbers.`;
   // ═══════════════════════════════════════════════════════
 
   let _csvText      = null;  // raw CSV in memory
-  let _financeResult = null; // parsed analysis
-  let _financeChat   = [];   // [{role, content}] in-session only
+  let _financeResult      = null; // parsed analysis
+  let _financeChat        = [];   // [{role, content}] in-session only
+  let _financeSummaryText = '';   // full summary passed to AI — reused in chat
 
   function initFinance() {
     if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('finance-body'); return; }
@@ -2608,11 +2609,11 @@ Be specific — name companies, people, numbers.`;
     ['Subscriptions',      ['amazon prime','costco membership','sams club membership','instacart+','shipt membership','microsoft 365','google one','adobe','dropbox','notion','evernote','zoom','lastpass','1password','vpn subscription']],
     ['Housing',            ['mortgage','rent','hoa','lease','property tax','escrow','pest control','lawn care','cleaning service','landscaping','pool service','home depot','lowes','ace hardware','menards','true value']],
     ['Insurance',          ['geico','progressive','allstate','state farm','usaa','farmers','liberty mutual','travelers','nationwide','american family','aetna','cigna','anthem','united health','humana','bluecross','bcbs','molina','oscar health','kaiser']],
-    ['Utilities',          ['fpl','duke energy','dominion energy','georgia power','xfinity','comcast','at&t wireless','at&t','att wireless','att','verizon wireless','verizon','spectrum','cox','t-mobile','mint mobile','visible','cricket','boost mobile','consumer cellular','waste management','republic services','electric','internet']],
+    ['Utilities',          ['fpl','duke energy','dominion energy','georgia power','xfinity','comcast','at&t wireless','at&t','att wireless','att','verizon wireless','verizon','spectrum','cox','t-mobile','mint mobile','visible','cricket','boost mobile','consumer cellular','us mobile','usmobile','usmobi','usmob','waste management','republic services','electric','internet']],
     ['Groceries',          ['publix','kroger','safeway','albertsons','heb','meijer','wegmans','giant food','vons','ralphs','aldi','lidl','trader joe','whole foods','sprouts','natural grocers','costco','sams club','bjs wholesale','instacart','shipt','amazon fresh','walmart grocery','drizly']],
     ['Gas & Fuel',         ['shell gas','bp gas','chevron','exxon','mobil','marathon','sunoco','citgo','valero','phillips 66','texaco','arco','wawa','sheetz','kwik trip','pilot flying','circle k','racetrac','speedway','shell','bp']],
     ['Dining Out',         ['uber eats','doordash','grubhub','postmates','seamless','gopuff','mcdonalds',"chick-fil-a",'subway','taco bell','burger king','chipotle','popeyes','dominos','pizza hut','panda express','five guys','wingstop','olive garden','texas roadhouse','applebees','chilis','outback','red lobster','longhorn','panera','starbucks','dunkin','dutch bros','bonefish','carrabba','buffalo wild wings',"denny's",'cracker barrel','first watch','bob evans','ihop']],
-    ['Entertainment',      ['netflix','hulu','disney+','hbo max',' max ','peacock','paramount+','apple tv+','espn+','crunchyroll','spotify','apple music','tidal','pandora','sirius xm','audible','youtube music','steam','playstation','nintendo','twitch','roblox','amc theaters','regal cinemas','cinemark','alamo drafthouse','ticketmaster','fandango','livenation']],
+    ['Entertainment',      ['netflix','hulu','disney+','hbo max',' max ','peacock','paramount+','paramountplus','paramnt','apple tv+','espn+','crunchyroll','spotify','apple music','tidal','pandora','sirius xm','audible','youtube music','steam','playstation','nintendo','twitch','roblox','amc theaters','regal cinemas','cinemark','alamo drafthouse','ticketmaster','fandango','livenation']],
     ['Transportation',     ['lyft','spothero','parkwhiz','parkmobile','sunpass','ezpass','amtrak','jiffy lube','valvoline','firestone','pep boys','midas','napa auto','autozone','oreilly','advance auto','car wash','uber']],
     ['Shopping',           ['amazon','walmart','target','ebay','etsy','temu','shein',"macy's",'nordstrom','kohls','tj maxx','marshalls','ross stores','burlington','best buy','apple store','ikea','wayfair','walgreens','cvs']],
     ['Healthcare',         ['rite aid','express scripts','caremark','goodrx','doctor','dentist','dental','optometrist','physical therapy','urgent care','hospital','labcorp','quest diagnostics','chiropract']],
@@ -2622,6 +2623,14 @@ Be specific — name companies, people, numbers.`;
     ['Giving & Charity',   ['church','tithe','donation','charity','gofundme']],
     ['Financial & Banking',['online payment','card payment','credit card payment','ach debit','ach credit','ach web','ach ppd','domestic wire','outgoing wire','wire transfer','bank transfer','transfer to','transfer from','bill pay','billpay','citi card','chase card','amex payment','discover payment','capital one payment','bank of america payment','wells fargo payment','us bank payment','synchrony payment','barclays payment','card online payment','autopay payment','atm fee','overdraft','late fee','annual fee','interest charge','loan payment','robinhood','coinbase','fidelity','vanguard','schwab','acorns','betterment']],
   ];
+
+  function _cleanDesc(str) {
+    return str
+      .replace(/\s+x{2,}\d+/gi, '')   // strip xxxxxx2718 style account fragments
+      .replace(/\s+\*{2,}\d+/gi, '')   // strip ****1234 style
+      .replace(/\s{2,}/g, ' ')         // collapse extra spaces
+      .trim();
+  }
 
   function _parseCsvRow(line) {
     const fields = [];
@@ -2685,7 +2694,7 @@ Be specific — name companies, people, numbers.`;
       if (cols.length < 2) continue;
 
       const date   = (cols[dateCol] || '').replace(/^"|"$/g, '').trim();
-      const desc   = (cols[descCol] || '').replace(/^"|"$/g, '').trim();
+      const desc   = _cleanDesc((cols[descCol] || '').replace(/^"|"$/g, ''));
       const amount = _parseAmount(cols[amtCol] || '');
       if (isNaN(amount) || amount === 0) continue;
 
@@ -2828,6 +2837,7 @@ Be specific — name companies, people, numbers.`;
 
     const computed = _parseFinanceCsv(csvText);
     const summaryText = _buildFinanceSummary(computed);
+    _financeSummaryText = summaryText;
 
     const prompt = `You are a personal finance coach. The transaction totals below were computed by JavaScript and are exact — do not recalculate any numbers.
 
@@ -3033,14 +3043,12 @@ Rules:
 
     const history = _financeChat.slice(0,-1)
       .map(m => `${m.role==='user'?'User':'Analyst'}: ${m.content}`).join('\n');
-    const snap = _financeResult?.summary
-      ? `Spending $${_financeResult.summary.totalSpending}, net $${_financeResult.summary.netCashFlow}.`
-      : '';
-
     const prompt = `You are a personal financial analyst. The user shared their bank transactions.
-${snap}${history ? '\nPrior conversation:\n'+history : ''}
+
+${_financeSummaryText}
+${history ? '\nPrior conversation:\n'+history : ''}
 User: ${question}
-Answer specifically and concisely based on their data. Under 120 words.`;
+Answer specifically and concisely based on their data. Under 150 words.`;
 
     try {
       const reply = await callAI(prompt, false, 512);
