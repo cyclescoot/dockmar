@@ -1060,7 +1060,7 @@
           <div class="card-header">
             <span class="card-title">Quick Answers</span>
             <div class="card-actions">
-              <button class="btn-icon hidden" id="btn-qa-websearch" title="Search web (Anthropic only)"
+              <button class="btn-icon hidden" id="btn-qa-websearch" title="Search the live web for current info — Anthropic Claude only"
                 style="font-size:.6rem;font-family:'DM Mono',monospace;letter-spacing:.04em;
                   padding:2px 6px;border-radius:4px;opacity:.5">🌐 web</button>
               <button class="btn-icon" id="btn-qa-expand" title="Expand">⤢</button>
@@ -3669,23 +3669,28 @@ Return only the CSS rules, no explanation, no markdown.`;
         <div class="spinner"></div>Thinking…
       </div>`;
 
-    const prompt = `Answer this question directly and concisely. Maximum 150 words. No preamble.
+    const prompt = _qaWebSearch
+      ? `Answer this question using current web information. Be specific — name events, dates, venues, people.
+Maximum 200 words. No preamble. Plain text only.
+Question: ${question}`
+      : `Answer this question directly and concisely. Maximum 150 words. No preamble.
 For professional topics give educational information and note when a professional is needed.
 If the question is a how-to, skill, tutorial, or visual topic, include a youtubeSearch field with a short search query (3-6 words).
-
-Return ONLY valid JSON:
-{"answer":"your answer here","youtubeSearch":"search query or null"}
-
+Return ONLY valid JSON: {"answer":"your answer here","youtubeSearch":"search query or null"}
 Question: ${question}`;
 
     try {
-      const raw  = await callAI(prompt, _qaWebSearch, 600);
-      let answer = raw.trim(), youtubeSearch = null;
-      try {
-        const parsed = JSON.parse(extractJSON(raw));
-        answer       = parsed.answer || raw;
-        youtubeSearch = parsed.youtubeSearch || null;
-      } catch {}
+      const raw  = await callAI(prompt, _qaWebSearch, 700);
+      // Strip Anthropic web search citation tags
+      const cleaned = raw.replace(/<cite[^>]*>/g, '').replace(/<\/cite>/g, '').trim();
+      let answer = cleaned, youtubeSearch = null;
+      if (!_qaWebSearch) {
+        try {
+          const parsed = JSON.parse(extractJSON(cleaned));
+          answer        = parsed.answer || cleaned;
+          youtubeSearch = parsed.youtubeSearch || null;
+        } catch {}
+      }
 
       const preview  = question.length > 55 ? question.slice(0, 55) + '…' : question;
       const ytUrl    = youtubeSearch
