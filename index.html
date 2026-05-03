@@ -823,6 +823,35 @@
     }
     .council-move strong { color: var(--accent); }
 
+    /* === CARD MODAL === */
+    .modal-panel {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 92%; max-width: 820px; max-height: 88vh;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      z-index: 250;
+      display: flex; flex-direction: column;
+      animation: fadeUp 0.25s ease;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .modal-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; }
+    #modal-body {
+      padding: 20px 24px 24px;
+      overflow-y: auto; flex: 1;
+      scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+    }
+    #modal-body::-webkit-scrollbar { width: 4px; }
+    #modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
     /* === MOBILE RESPONSIVE === */
     @media (max-width: 900px) {
       .card-grid { grid-template-columns: repeat(2, 1fr); }
@@ -959,7 +988,9 @@
         <div class="card" id="card-weather">
           <div class="card-header">
             <span class="card-title">Weather</span>
-            <div class="card-actions" id="weather-actions"></div>
+            <div class="card-actions" id="weather-actions">
+              <button class="btn-icon" id="btn-weather-expand" title="Expand">⤢</button>
+            </div>
           </div>
           <div id="weather-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
@@ -968,7 +999,9 @@
         <div class="card" id="card-calendar">
           <div class="card-header">
             <span class="card-title">Calendar</span>
-            <div class="card-actions"></div>
+            <div class="card-actions">
+              <button class="btn-icon" id="btn-calendar-expand" title="Expand">⤢</button>
+            </div>
           </div>
           <div id="calendar-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
@@ -977,7 +1010,9 @@
         <div class="card" id="card-finance">
           <div class="card-header">
             <span class="card-title">Finance</span>
-            <div class="card-actions"></div>
+            <div class="card-actions">
+              <button class="btn-icon" id="btn-finance-expand" title="Expand">⤢</button>
+            </div>
           </div>
           <div id="finance-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
@@ -988,6 +1023,7 @@
             <span class="card-title">Daily Briefing</span>
             <div class="card-actions">
               <button class="btn-icon" id="btn-briefing-refresh" title="Regenerate briefing">↻</button>
+              <button class="btn-icon" id="btn-briefing-expand" title="Expand">⤢</button>
             </div>
           </div>
           <div id="briefing-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
@@ -1000,6 +1036,7 @@
             <div class="card-actions">
               <span class="font-mono text-xxs text-dim" id="news-timestamp"></span>
               <button class="btn-icon" id="btn-news-refresh" title="Refresh news">↻</button>
+              <button class="btn-icon" id="btn-news-expand" title="Expand">⤢</button>
             </div>
           </div>
           <div id="news-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
@@ -1012,6 +1049,7 @@
             <div class="card-actions">
               <button class="btn-icon" id="btn-council-edit" title="Edit council">✎</button>
               <button class="btn-icon" id="btn-council-new" title="New session">⊕</button>
+              <button class="btn-icon" id="btn-council-expand" title="Expand">⤢</button>
             </div>
           </div>
           <div id="council-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
@@ -1021,7 +1059,9 @@
         <div class="card" id="card-qa">
           <div class="card-header">
             <span class="card-title">Quick Answers</span>
-            <div class="card-actions"></div>
+            <div class="card-actions">
+              <button class="btn-icon" id="btn-qa-expand" title="Expand">⤢</button>
+            </div>
           </div>
           <div id="qa-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
@@ -1041,6 +1081,20 @@
     <footer class="footer">
       Built with Claude · Your data stays on your device
     </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       CARD EXPAND MODAL
+  ══════════════════════════════════════════════ -->
+  <div id="card-modal" class="hidden">
+    <div class="overlay-backdrop" id="modal-backdrop"></div>
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div class="modal-title" id="modal-title"></div>
+        <button class="btn-icon" id="modal-close">✕</button>
+      </div>
+      <div id="modal-body"></div>
+    </div>
   </div>
 
   <!-- ══════════════════════════════════════════════
@@ -1965,8 +2019,11 @@
     const body = document.getElementById('weather-body');
     body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
 
-    document.getElementById('weather-actions').innerHTML =
-      '<button class="btn-icon" id="btn-weather-refresh" title="Refresh weather">↻</button>';
+    const wa = document.getElementById('weather-actions');
+    if (!wa.querySelector('#btn-weather-refresh')) {
+      wa.insertAdjacentHTML('afterbegin',
+        '<button class="btn-icon" id="btn-weather-refresh" title="Refresh weather">↻</button>');
+    }
     document.getElementById('btn-weather-refresh').addEventListener('click', () => {
       fetchWeather(parseFloat(LS.get(KEYS.CITY_LAT)), parseFloat(LS.get(KEYS.CITY_LON)));
     });
@@ -3034,6 +3091,51 @@ Return only the CSS rules, no explanation, no markdown.`;
   // SECTION 13: FINAL POLISH
   // ═══════════════════════════════════════════════════════
 
+  // ─── CARD EXPAND MODAL ────────────────────────────────
+
+  function openModal(title, bodyId) {
+    const src = document.getElementById(bodyId);
+    if (!src) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = src.innerHTML;
+    // Strip scroll constraints so modal shows everything at once
+    tmp.querySelectorAll('[style*="max-height"]').forEach(el => {
+      el.style.maxHeight = 'none';
+      el.style.overflow  = 'visible';
+    });
+    // Auto-expand collapsed news stories
+    if (bodyId === 'news-body') {
+      tmp.querySelectorAll('.news-expand').forEach(el => el.classList.remove('hidden'));
+    }
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML    = tmp.innerHTML;
+    document.getElementById('card-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('card-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function initExpandButtons() {
+    const map = [
+      ['btn-weather-expand',  'Weather',       'weather-body'],
+      ['btn-calendar-expand', 'Calendar',      'calendar-body'],
+      ['btn-finance-expand',  'Finance',       'finance-body'],
+      ['btn-briefing-expand', 'Daily Briefing','briefing-body'],
+      ['btn-news-expand',     'News',          'news-body'],
+      ['btn-council-expand',  'The Council',   'council-body'],
+      ['btn-qa-expand',       'Quick Answers', 'qa-body'],
+    ];
+    map.forEach(([btnId, title, bodyId]) => {
+      const btn = document.getElementById(btnId);
+      if (btn) btn.addEventListener('click', () => openModal(title, bodyId));
+    });
+    document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+  }
+
   // ─── UNLOCK / LOCKED-CARD HELPERS ────────────────────
 
   function renderLockedCard(bodyId) {
@@ -3110,6 +3212,7 @@ Return only the CSS rules, no explanation, no markdown.`;
     if (!document.getElementById('settings-overlay').classList.contains('hidden')) closeSettings();
     if (!document.getElementById('customize-panel').classList.contains('hidden'))
       document.getElementById('customize-panel').classList.add('hidden');
+    if (!document.getElementById('card-modal').classList.contains('hidden')) closeModal();
   });
 
   // Page title stays in sync with name
@@ -3222,6 +3325,7 @@ Question: ${question}`;
     setTimeout(() => initNews(), 3000);
     initCouncil();
     initQuickAnswers();
+    initExpandButtons();
   }
   </script>
 
