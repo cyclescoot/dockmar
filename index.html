@@ -2220,75 +2220,171 @@
     renderCalendar();
   }
 
-  function renderCalendar() {
-    const body    = document.getElementById('calendar-body');
-    const calUrl  = LS.get(KEYS.CAL_URL);
-    const today   = new Date();
+  async function renderCalendar() {
+    const body   = document.getElementById('calendar-body');
+    const calUrl = LS.get(KEYS.CAL_URL);
+    const today  = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Demo events, always relative to today's date
-    const DEMO = [
-      { d: 0, time: '9:00 AM',  name: 'Team standup',            loc: 'Zoom' },
-      { d: 0, time: '12:30 PM', name: 'Lunch with Sarah',        loc: 'The Blue Plate' },
-      { d: 0, time: '4:00 PM',  name: 'Focus block',             loc: '' },
-      { d: 1, time: '2:00 PM',  name: 'Dentist appointment',     loc: 'Dr. Martinez Dental' },
-      { d: 2, time: '10:00 AM', name: 'Product review',          loc: 'Conference Room A' },
-      { d: 3, time: '3:30 PM',  name: 'Weekly 1:1',              loc: '' },
-      { d: 5, time: '7:00 AM',  name: 'Gym session',             loc: 'Fitness Center' },
-      { d: 6, time: '7:00 PM',  name: 'Birthday dinner',         loc: 'Casa Italiana' },
-    ];
+    if (!calUrl) { _renderDemoCalendar(body, today); return; }
 
-    // Group by day offset
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    try {
+      const res = await fetch(calUrl);
+      if (!res.ok) throw new Error(`Calendar fetch failed (${res.status})`);
+      const ics    = await res.text();
+      const events = _parseICS(ics, today);
+      _renderCalendarEvents(body, events, today);
+    } catch (err) {
+      body.innerHTML = `
+        <div>
+          <div style="font-size:.75rem;color:var(--red);margin-bottom:10px;line-height:1.5">
+            Could not load calendar: ${escHtml(err.message)}<br>
+            <span style="color:var(--text-dim)">Check your iCal URL in ⚙️ Settings.</span>
+          </div>
+        </div>`;
+    }
+  }
+
+  function _parseICSDate(str) {
+    if (!str) return null;
+    const v = str.trim();
+    // UTC datetime: 20260503T090000Z
+    if (/^\d{8}T\d{6}Z$/.test(v))
+      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T${v.slice(9,11)}:${v.slice(11,13)}:${v.slice(13,15)}Z`);
+    // Local datetime: 20260503T090000
+    if (/^\d{8}T\d{6}$/.test(v))
+      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T${v.slice(9,11)}:${v.slice(11,13)}:${v.slice(13,15)}`);
+    // All-day date: 20260503
+    if (/^\d{8}$/.test(v))
+      return new Date(`${v.slice(0,4)}-${v.slice(4,6)}-${v.slice(6,8)}T00:00:00`);
+    return null;
+  }
+
+  function _parseICS(ics, today) {
+    // Unfold wrapped lines (ICS spec: continuation lines start with space or tab)
+    const text = ics.replace(/\r\n/g, '\n').replace(/\n[ \t]/g, '');
+    const blocks = text.split('BEGIN:VEVENT');
+    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 14);
+    const events = [];
+
+    for (let i = 1; i < blocks.length; i++) {
+      const block = blocks[i];
+
+      // TODO: Add recurring event support (RRULE) in a future update.
+      // Recurring events require expanding recurrences across a date range
+      // per RFC 5545 §3.8.5.3 — non-trivial due to FREQ/INTERVAL/BYDAY/EXDATE rules.
+      if (/^RRULE:/m.test(block)) continue;
+
+      const get = key => {
+        const m = block.match(new RegExp(`^${key}(?:;[^:]*)?:(.+)`, 'm'));
+        return m ? m[1].trim() : null;
+      };
+
+      const summary = get('SUMMARY');
+      if (!summary) continue;
+      const dtstart = get('DTSTART');
+      if (!dtstart) continue;
+      const start = _parseICSDate(dtstart);
+      if (!start || start < today || start >= cutoff) continue;
+
+      events.push({
+        start,
+        name: summary.replace(/\\n/g, ' ').replace(/\\,/g, ','),
+        loc:  (get('LOCATION') || '').replace(/\\n/g, ' ').replace(/\\,/g, ','),
+      });
+    }
+
+    return events.sort((a, b) => a.start - b.start);
+  }
+
+  function _buildCalendarHtml(events, today) {
+    if (!events.length) return '<div style="font-size:.82rem;color:var(--text-dim);padding:8px 0">No upcoming events in the next 14 days.</div>';
     const groups = {};
-    DEMO.forEach(ev => {
-      if (!groups[ev.d]) groups[ev.d] = [];
-      groups[ev.d].push(ev);
+    events.forEach(ev => {
+      const key = ev.start.toDateString();
+      if (!groups[key]) groups[key] = { date: ev.start, evs: [] };
+      groups[key].evs.push(ev);
     });
+    return Object.values(groups).map(({ date, evs }) => {
+      const diff = Math.round((date - today) / 86400000);
+      const label = diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow'
+        : date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const evRows = evs.map(ev => {
+        const time = ev.start.getHours() === 0 && ev.start.getMinutes() === 0
+          ? 'All day'
+          : ev.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        return `<div class="event-item">
+          <div class="event-time">${time}</div>
+          <div>
+            <div class="event-name">${escHtml(ev.name)}</div>
+            ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="event-day-label">${label}</div>${evRows}`;
+    }).join('');
+  }
 
+  function _renderCalendarEvents(body, events, today) {
+    body.innerHTML = `
+      <div>
+        <div style="max-height:260px;overflow-y:auto;padding-right:2px;
+          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+          ${_buildCalendarHtml(events, today)}
+        </div>
+        <div style="margin-top:8px;font-size:.65rem;color:var(--text-dim);
+              font-family:'DM Mono',monospace;line-height:1.5">
+          Recurring events not shown · <button onclick="openSettings()"
+            style="background:none;border:none;color:var(--accent);cursor:pointer;
+              font-size:.65rem;font-family:'DM Mono',monospace;padding:0">update URL</button>
+        </div>
+      </div>`;
+  }
+
+  function _renderDemoCalendar(body, today) {
+    const DEMO = [
+      { d: 0, time: '9:00 AM',  name: 'Team standup',        loc: 'Zoom' },
+      { d: 0, time: '12:30 PM', name: 'Lunch with Sarah',    loc: 'The Blue Plate' },
+      { d: 0, time: '4:00 PM',  name: 'Focus block',         loc: '' },
+      { d: 1, time: '2:00 PM',  name: 'Dentist appointment', loc: 'Dr. Martinez Dental' },
+      { d: 2, time: '10:00 AM', name: 'Product review',      loc: 'Conference Room A' },
+      { d: 3, time: '3:30 PM',  name: 'Weekly 1:1',          loc: '' },
+      { d: 5, time: '7:00 AM',  name: 'Gym session',         loc: 'Fitness Center' },
+      { d: 6, time: '7:00 PM',  name: 'Birthday dinner',     loc: 'Casa Italiana' },
+    ];
+    const groups = {};
+    DEMO.forEach(ev => { if (!groups[ev.d]) groups[ev.d] = []; groups[ev.d].push(ev); });
     let evHtml = '';
-    Object.keys(groups).sort((a,b) => a - b).forEach(offset => {
-      const d = new Date(today);
-      d.setDate(d.getDate() + Number(offset));
-
-      let label;
-      if (offset == 0) label = 'Today';
-      else if (offset == 1) label = 'Tomorrow';
-      else label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-
+    Object.keys(groups).sort((a, b) => a - b).forEach(offset => {
+      const d = new Date(today); d.setDate(d.getDate() + Number(offset));
+      const label = offset == 0 ? 'Today' : offset == 1 ? 'Tomorrow'
+        : d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
       evHtml += `<div class="event-day-label">${label}</div>`;
       groups[offset].forEach(ev => {
-        evHtml += `
-          <div class="event-item">
-            <div class="event-time">${ev.time}</div>
-            <div>
-              <div class="event-name">${escHtml(ev.name)}</div>
-              ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
-            </div>
-          </div>`;
+        evHtml += `<div class="event-item">
+          <div class="event-time">${ev.time}</div>
+          <div>
+            <div class="event-name">${escHtml(ev.name)}</div>
+            ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
+          </div>
+        </div>`;
       });
     });
-
-    const footerHtml = calUrl
-      ? `<div style="margin-top:10px;font-size:.68rem;color:var(--gold);
-              font-family:'DM Mono',monospace">
-           iCal URL saved · live sync in Phase 2
-         </div>`
-      : `<div style="margin-top:10px">
-           <button onclick="openSettings()"
-             style="font-size:.72rem;color:var(--accent);background:none;border:none;
-                    cursor:pointer;font-family:'DM Mono',monospace;padding:0">
-             + Connect your real calendar →
-           </button>
-         </div>`;
-
-    // Wrap in a single div so card-loading's display:flex doesn't split children
     body.innerHTML = `
       <div>
         <div style="max-height:260px;overflow-y:auto;padding-right:2px;
           scrollbar-width:thin;scrollbar-color:var(--border) transparent">
           ${evHtml}
         </div>
-        ${footerHtml}
+        <div style="margin-top:10px">
+          <button onclick="openSettings()"
+            style="font-size:.72rem;color:var(--accent);background:none;border:none;
+                   cursor:pointer;font-family:'DM Mono',monospace;padding:0">
+            + Connect your real calendar →
+          </button>
+        </div>
       </div>`;
   }
 
