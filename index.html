@@ -905,7 +905,7 @@
             <div class="provider-icon" style="background:rgba(240,180,41,0.1)">◈</div>
             <div style="flex:1">
               <div class="provider-name">Google Gemini</div>
-              <div class="provider-detail">gemini-2.0-flash · free tier available</div>
+              <div class="provider-detail">gemini-2.5-flash · free tier available</div>
             </div>
             <span class="provider-badge"><span class="badge badge-emerald">Free</span></span>
           </button>
@@ -1640,7 +1640,7 @@
 
   async function _callGemini(key, prompt, maxTokens) {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-                'gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key);
+                'gemini-2.5-flash:generateContent?key=' + encodeURIComponent(key);
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
