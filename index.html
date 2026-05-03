@@ -1079,7 +1079,7 @@
     </div>
 
     <footer class="footer">
-      Built with Claude · Your data stays on your device
+      Dockmar · Your settings stay on your device · AI features use your provider's API
       <span style="margin-left:14px;opacity:.35">·</span>
       <span id="cost-footer" style="margin-left:8px"></span><button onclick="resetCostTracker()" style="margin-left:6px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.7rem;font-family:'DM Mono',monospace;padding:0;opacity:.5;text-decoration:underline;vertical-align:baseline">Reset</button>
     </footer>
@@ -1255,6 +1255,39 @@
             style="color:var(--red);border-color:rgba(240,82,82,0.4)">
             Reset dashboard to defaults
           </button>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:14px">
+        <button onclick="(function(b){var c=document.getElementById('privacy-content');var open=c.style.display!=='none';c.style.display=open?'none':'block';b.textContent=open?'Privacy & Data ›':'Privacy & Data ‹';})(this)"
+          style="background:none;border:none;padding:0;cursor:pointer;font-family:'DM Mono',monospace;
+            font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);
+            width:100%;text-align:left">Privacy &amp; Data ›</button>
+        <div id="privacy-content" style="display:none;margin-top:12px">
+          <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:8px">Your data &amp; privacy</div>
+          <p style="font-size:.78rem;color:var(--text-dim);line-height:1.65;margin:0 0 12px">
+            Dockmar sends data to your chosen AI provider only when features require it — news, briefing,
+            finance analysis, council, and just ask. Your personal settings (name, city, topics, council names)
+            are stored only in your browser and never transmitted anywhere.
+          </p>
+          <div style="font-size:.75rem;color:var(--text-dim);line-height:1.7;margin-bottom:12px">
+            <div style="color:var(--text-mid);margin-bottom:4px">How your AI provider handles API data:</div>
+            <div>· Anthropic Claude — deleted after 7 days, never used for model training</div>
+            <div>· OpenAI GPT-4o — not used for training by default</div>
+            <div>· Google Gemini — not used for training by default</div>
+          </div>
+          <p style="font-size:.75rem;color:var(--text-dim);line-height:1.65;margin:0 0 12px">
+            For financial data: your bank CSV is sent directly to your AI provider for analysis
+            and deleted per their API policy. Dockmar never stores your financial data.
+          </p>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener"
+              style="font-size:.74rem;color:var(--cyan);text-decoration:none">Anthropic privacy policy ↗</a>
+            <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener"
+              style="font-size:.74rem;color:var(--cyan);text-decoration:none">OpenAI privacy policy ↗</a>
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener"
+              style="font-size:.74rem;color:var(--cyan);text-decoration:none">Google privacy policy ↗</a>
+          </div>
         </div>
       </div>
 
@@ -2449,14 +2482,7 @@ Be specific — name companies, people, numbers.`;
   function renderNewsList(stories, isAnthropic) {
     const body = document.getElementById('news-body');
 
-    const webNote = !isAnthropic
-      ? `<div style="margin-bottom:12px;padding:7px 10px;
-            background:rgba(240,180,41,0.06);border:1px solid rgba(240,180,41,0.15);
-            border-radius:var(--radius-sm);font-size:.72rem;color:var(--text-dim);line-height:1.5">
-           ⚡ Live web search requires Anthropic Claude.
-           Results may not reflect today's stories.
-         </div>`
-      : '';
+    const webNote = '';
 
     const SENTIMENTS = {
       positive: { arrow: '↑', color: 'var(--green)'    },
@@ -2932,7 +2958,8 @@ Rules:
     const privacyHtml = `
       <div style="font-size:.68rem;color:var(--text-dim);font-family:'DM Mono',monospace;
             line-height:1.6;margin-top:8px">
-        Your financial data goes directly to ${escHtml(provider)}. Nothing stored on any server. Ever.
+        Your bank data is sent directly to ${escHtml(provider)} for analysis via their API.
+        Deleted per their API policy within days. Never stored by Dockmar. Never used for AI training.
       </div>`;
 
     const sectionLabel = t => `<div style="font-family:'DM Mono',monospace;font-size:.65rem;
