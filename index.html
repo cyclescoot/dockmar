@@ -1181,6 +1181,17 @@
               placeholder="Paste new key to update" autocomplete="off" spellcheck="false">
             <span class="text-dim text-xxs font-mono" id="settings-apikey-hint"></span>
           </div>
+          <div class="field">
+            <label class="field-label" style="display:flex;justify-content:space-between;align-items:center">
+              Model ID
+              <a id="settings-model-docs" href="https://docs.anthropic.com/en/docs/about-claude/models"
+                target="_blank" rel="noopener"
+                style="font-size:.7rem;color:var(--cyan);opacity:.75;font-weight:400;text-decoration:none">Model docs ↗</a>
+            </label>
+            <input type="text" class="input" id="settings-model"
+              placeholder="claude-sonnet-4-5" autocomplete="off" spellcheck="false">
+            <span class="text-dim text-xxs font-mono" style="margin-top:3px">Leave blank to use the built-in default</span>
+          </div>
         </div>
       </div>
 
@@ -1276,8 +1287,11 @@
     FINANCE:     'financeData',
     CAL_URL:     'calendarUrl',
     STYLES:      'customStyles',
-    BRIEFING:    'briefingText',
-    BRIEFING_TS: 'briefingTimestamp',
+    BRIEFING:        'briefingText',
+    BRIEFING_TS:     'briefingTimestamp',
+    MODEL_ANTHROPIC: 'modelAnthropic',
+    MODEL_OPENAI:    'modelOpenAI',
+    MODEL_GEMINI:    'modelGemini',
   };
 
   const LS = {
@@ -1598,7 +1612,7 @@
 
   async function _callAnthropic(key, prompt, useWebSearch, maxTokens) {
     const body = {
-      model: 'claude-sonnet-4-5',
+      model: _getModel('anthropic'),
       max_tokens: maxTokens,
       messages: [{ role: 'user', content: prompt }],
     };
@@ -1627,7 +1641,7 @@
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: _getModel('openai'),
         max_tokens: maxTokens,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -1640,7 +1654,7 @@
 
   async function _callGemini(key, prompt, maxTokens) {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-                'gemini-2.5-flash:generateContent?key=' + encodeURIComponent(key);
+                _getModel('gemini') + ':generateContent?key=' + encodeURIComponent(key);
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1737,6 +1751,7 @@
     document.getElementById('btn-settings-close').addEventListener('click', closeSettings);
     document.getElementById('settings-backdrop').addEventListener('click', closeSettings);
     document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    document.getElementById('settings-provider').addEventListener('change', _updateModelField);
     document.getElementById('btn-clear-finance').addEventListener('click', () => {
       if (confirm('Clear saved finance data? This cannot be undone.')) {
         LS.remove(KEYS.FINANCE);
@@ -1773,6 +1788,27 @@
       }
     });
     _wireSettingsCityAutocomplete();
+  }
+
+  const _MODEL_DEFAULTS = {
+    anthropic: { model: 'claude-sonnet-4-5', docs: 'https://docs.anthropic.com/en/docs/about-claude/models' },
+    openai:    { model: 'gpt-4o',            docs: 'https://platform.openai.com/docs/models' },
+    gemini:    { model: 'gemini-2.5-flash',  docs: 'https://ai.google.dev/gemini-api/docs/models' },
+  };
+  const _MODEL_KEY = { anthropic: 'MODEL_ANTHROPIC', openai: 'MODEL_OPENAI', gemini: 'MODEL_GEMINI' };
+
+  function _updateModelField() {
+    const provider = document.getElementById('settings-provider').value;
+    const d = _MODEL_DEFAULTS[provider] || _MODEL_DEFAULTS.gemini;
+    const saved = LS.get(KEYS[_MODEL_KEY[provider]]) || '';
+    document.getElementById('settings-model').placeholder = d.model;
+    document.getElementById('settings-model').value       = saved;
+    document.getElementById('settings-model-docs').href  = d.docs;
+  }
+
+  function _getModel(provider) {
+    const key = _MODEL_KEY[provider];
+    return (key && LS.get(KEYS[key])) || (_MODEL_DEFAULTS[provider]?.model) || '';
   }
 
   function _wireSettingsCityAutocomplete() {
@@ -1824,6 +1860,7 @@
     const rawKey = LS.getDecoded(KEYS.API_KEY);
     document.getElementById('settings-provider').value = LS.get(KEYS.PROVIDER) || 'gemini';
     document.getElementById('settings-apikey').value   = '';
+    _updateModelField();
     document.getElementById('settings-apikey-hint').textContent = rawKey
       ? 'Saved — ends in ···' + rawKey.slice(-4) : 'No key saved';
     document.getElementById('settings-name').value     = LS.get(KEYS.USER_NAME)   || '';
@@ -1892,6 +1929,9 @@
 
     LS.set(KEYS.PROVIDER, provider);
     if (newKey)  LS.setEncoded(KEYS.API_KEY, newKey);
+    const modelVal = document.getElementById('settings-model').value.trim();
+    const modelKey = KEYS[_MODEL_KEY[provider]];
+    if (modelKey) { if (modelVal) LS.set(modelKey, modelVal); else LS.remove(modelKey); }
     if (name)    LS.set(KEYS.USER_NAME, name);
     if (topics)  LS.set(KEYS.NEWS_TOPICS, topics);
     if (calUrl)  LS.set(KEYS.CAL_URL, calUrl);
