@@ -1060,6 +1060,9 @@
           <div class="card-header">
             <span class="card-title">Quick Answers</span>
             <div class="card-actions">
+              <button class="btn-icon hidden" id="btn-qa-websearch" title="Search web (Anthropic only)"
+                style="font-size:.6rem;font-family:'DM Mono',monospace;letter-spacing:.04em;
+                  padding:2px 6px;border-radius:4px;opacity:.5">🌐 web</button>
               <button class="btn-icon" id="btn-qa-expand" title="Expand">⤢</button>
             </div>
           </div>
@@ -3596,9 +3599,26 @@ Return only the CSS rules, no explanation, no markdown.`;
     'Explain my DNA ethnicity results',
   ];
 
+  let _qaWebSearch = false;
+
   function initQuickAnswers() {
     if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('qa-body'); return; }
     const body = document.getElementById('qa-body');
+
+    // Show web search toggle only for Anthropic
+    const wsBtn = document.getElementById('btn-qa-websearch');
+    if (wsBtn) {
+      if (LS.get(KEYS.PROVIDER) === 'anthropic') {
+        wsBtn.classList.remove('hidden');
+        wsBtn.addEventListener('click', () => {
+          _qaWebSearch = !_qaWebSearch;
+          wsBtn.style.opacity  = _qaWebSearch ? '1'   : '.5';
+          wsBtn.style.color    = _qaWebSearch ? 'var(--cyan)' : '';
+        });
+      } else {
+        wsBtn.classList.add('hidden');
+      }
+    }
 
     body.innerHTML = `
       <div>
@@ -3642,14 +3662,36 @@ Return only the CSS rules, no explanation, no markdown.`;
         <div class="spinner"></div>Thinking…
       </div>`;
 
-    const prompt = `Answer this question directly and concisely.
-Maximum 150 words. No preamble. Just the answer.
+    const prompt = `Answer this question directly and concisely. Maximum 150 words. No preamble.
 For professional topics give educational information and note when a professional is needed.
+If the question is a how-to, skill, tutorial, or visual topic, include a youtubeSearch field with a short search query (3-6 words).
+
+Return ONLY valid JSON:
+{"answer":"your answer here","youtubeSearch":"search query or null"}
+
 Question: ${question}`;
 
     try {
-      const answer = await callAI(prompt, false, 400);
-      const preview = question.length > 55 ? question.slice(0, 55) + '…' : question;
+      const raw  = await callAI(prompt, _qaWebSearch, 600);
+      let answer = raw.trim(), youtubeSearch = null;
+      try {
+        const parsed = JSON.parse(extractJSON(raw));
+        answer       = parsed.answer || raw;
+        youtubeSearch = parsed.youtubeSearch || null;
+      } catch {}
+
+      const preview  = question.length > 55 ? question.slice(0, 55) + '…' : question;
+      const ytUrl    = youtubeSearch
+        ? 'https://www.youtube.com/results?search_query=' + encodeURIComponent(youtubeSearch)
+        : null;
+      const ytBtn    = ytUrl
+        ? `<a href="${ytUrl}" target="_blank" rel="noopener"
+              style="display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+                padding:6px 12px;background:rgba(255,0,0,0.08);border:1px solid rgba(255,0,0,0.2);
+                border-radius:var(--radius-sm);font-size:.78rem;color:#ff4444;
+                text-decoration:none;font-family:'DM Mono',monospace">
+             ▶ Watch on YouTube
+           </a>` : '';
 
       answerEl.innerHTML = `
         <div style="margin-top:10px;padding:12px 14px;background:var(--surface-alt);
@@ -3657,6 +3699,7 @@ Question: ${question}`;
               font-size:.88rem;line-height:1.75;color:var(--text)">
           ${escHtml(answer).replace(/\n+/g, '<br>')}
         </div>
+        ${ytBtn}
         <div style="margin-top:8px;display:flex;align-items:center;
               justify-content:space-between;gap:8px">
           <span style="font-family:'DM Mono',monospace;font-size:.62rem;
