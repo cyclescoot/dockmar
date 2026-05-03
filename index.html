@@ -2711,7 +2711,11 @@ ${data}`;
         '<span style="font-size:.78rem;color:var(--emerald)">✓ Saved for next time</span>';
     });
     document.getElementById('btn-fskip').addEventListener('click', () => {
-      document.getElementById('finance-save-row').remove();
+      const row = document.getElementById('finance-save-row');
+      row.innerHTML = `
+        <span style="font-size:.78rem;color:var(--text-dim)">Not saved.</span>
+        <button class="btn btn-secondary btn-sm" id="btn-finance-newfile">↑ Analyze a new file</button>`;
+      document.getElementById('btn-finance-newfile').addEventListener('click', renderFinanceDropZone);
     });
 
     // Wire chat
