@@ -2536,6 +2536,144 @@ Be specific — name companies, people, numbers.`;
     reader.readAsText(file);
   }
 
+  // ── Finance CSV pre-computation ───────────────────────────────────────────────
+  const _FINANCE_CATS = [
+    // Order matters — first match wins. More specific keywords before general ones.
+    ['Subscriptions',      ['amazon prime','costco membership','sams club membership','instacart+','shipt membership','microsoft 365','google one','adobe','dropbox','notion','evernote','zoom','lastpass','1password','vpn subscription']],
+    ['Housing',            ['mortgage','rent','hoa','lease','property tax','escrow','pest control','lawn care','cleaning service','landscaping','pool service','home depot','lowes','ace hardware','menards','true value']],
+    ['Insurance',          ['geico','progressive','allstate','state farm','usaa','farmers','liberty mutual','travelers','nationwide','american family','aetna','cigna','anthem','united health','humana','bluecross','bcbs','molina','oscar health','kaiser']],
+    ['Utilities',          ['fpl','duke energy','dominion energy','georgia power','xfinity','comcast','at&t wireless','at&t','att wireless','att','verizon wireless','verizon','spectrum','cox','t-mobile','mint mobile','visible','cricket','boost mobile','consumer cellular','waste management','republic services','electric','internet']],
+    ['Groceries',          ['publix','kroger','safeway','albertsons','heb','meijer','wegmans','giant food','vons','ralphs','aldi','lidl','trader joe','whole foods','sprouts','natural grocers','costco','sams club','bjs wholesale','instacart','shipt','amazon fresh','walmart grocery','drizly']],
+    ['Gas & Fuel',         ['shell gas','bp gas','chevron','exxon','mobil','marathon','sunoco','citgo','valero','phillips 66','texaco','arco','wawa','sheetz','kwik trip','pilot flying','circle k','racetrac','speedway','shell','bp']],
+    ['Dining Out',         ['uber eats','doordash','grubhub','postmates','seamless','gopuff','mcdonalds',"chick-fil-a",'subway','taco bell','burger king','chipotle','popeyes','dominos','pizza hut','panda express','five guys','wingstop','olive garden','texas roadhouse','applebees','chilis','outback','red lobster','longhorn','panera','starbucks','dunkin','dutch bros','bonefish','carrabba','buffalo wild wings',"denny's",'cracker barrel','first watch','bob evans','ihop']],
+    ['Entertainment',      ['netflix','hulu','disney+','hbo max',' max ','peacock','paramount+','apple tv+','espn+','crunchyroll','spotify','apple music','tidal','pandora','sirius xm','audible','youtube music','steam','playstation','nintendo','twitch','roblox','amc theaters','regal cinemas','cinemark','alamo drafthouse','ticketmaster','fandango','livenation']],
+    ['Transportation',     ['lyft','spothero','parkwhiz','parkmobile','sunpass','ezpass','amtrak','jiffy lube','valvoline','firestone','pep boys','midas','napa auto','autozone','oreilly','advance auto','car wash','uber']],
+    ['Shopping',           ['amazon','walmart','target','ebay','etsy','temu','shein',"macy's",'nordstrom','kohls','tj maxx','marshalls','ross stores','burlington','best buy','apple store','ikea','wayfair','walgreens','cvs']],
+    ['Healthcare',         ['rite aid','express scripts','caremark','goodrx','doctor','dentist','dental','optometrist','physical therapy','urgent care','hospital','labcorp','quest diagnostics','chiropract']],
+    ['Travel',             ['delta','american airlines','united airlines','southwest airlines','spirit airlines','jetblue','alaska airlines','expedia','kayak','marriott','hilton','hyatt','holiday inn','best western','airbnb','vrbo','hotels.com','booking.com','enterprise rent','hertz','avis']],
+    ['Personal Care',      ['salon','barber','great clips','nail salon','massage','sephora','ulta','planet fitness','la fitness','equinox','anytime fitness','ymca','orange theory','crossfit','peloton','classpass']],
+    ['Pets',               ['petco','petsmart','chewy','pet supplies','veterinary','animal hospital','banfield','vca vet','rover']],
+    ['Giving & Charity',   ['church','tithe','donation','charity','gofundme']],
+    ['Financial & Banking',['atm fee','wire transfer','overdraft','late fee','annual fee','interest charge','loan payment','robinhood','coinbase','fidelity','vanguard','schwab','acorns','betterment']],
+  ];
+
+  function _parseFinanceCsv(csvText) {
+    const rows = csvText.replace(/\r/g, '').trim().split('\n');
+    const firstRow = rows[0].toLowerCase();
+    const dataRows = (firstRow.includes('date') || firstRow.includes('description')) ? rows.slice(1) : rows;
+
+    let totalIncome = 0, totalSpending = 0;
+    const catMap = {};
+    const months = new Set();
+
+    for (const line of dataRows) {
+      if (!line.trim()) continue;
+      const firstComma = line.indexOf(',');
+      const lastComma  = line.lastIndexOf(',');
+      if (firstComma === -1 || lastComma === firstComma) continue;
+      const date   = line.slice(0, firstComma).trim();
+      const desc   = line.slice(firstComma + 1, lastComma).trim().replace(/^"|"$/g, '');
+      const amount = parseFloat(line.slice(lastComma + 1));
+      if (isNaN(amount)) continue;
+
+      const mo = date.slice(0, 7);
+      if (mo) months.add(mo);
+
+      const bucket = name => {
+        if (!catMap[name]) catMap[name] = { total: 0, txCount: 0, biggest: null, byMonth: {} };
+        catMap[name].total += Math.abs(amount);
+        catMap[name].txCount++;
+        if (!catMap[name].biggest || Math.abs(amount) > catMap[name].biggest.amount) {
+          catMap[name].biggest = { desc, amount: Math.abs(amount) };
+        }
+        if (mo) catMap[name].byMonth[mo] = (catMap[name].byMonth[mo] || 0) + Math.abs(amount);
+      };
+
+      if (amount > 0) {
+        totalIncome += amount;
+        bucket('Income');
+      } else {
+        totalSpending += Math.abs(amount);
+        const dl = desc.toLowerCase();
+        let matched = 'Other';
+        for (const [cat, kws] of _FINANCE_CATS) {
+          if (kws.some(kw => dl.includes(kw))) { matched = cat; break; }
+        }
+        bucket(matched);
+      }
+    }
+
+    const numMonths = Math.max(months.size, 1);
+    const netCashFlow = totalIncome - totalSpending;
+    const savingsRate = totalIncome > 0 ? Math.round((netCashFlow / totalIncome) * 10000) / 100 : null;
+
+    const categories = Object.entries(catMap)
+      .filter(([n]) => n !== 'Income')
+      .sort(([, a], [, b]) => b.total - a.total)
+      .map(([name, d]) => {
+        const pct = totalSpending > 0 ? Math.round((d.total / totalSpending) * 100) : 0;
+        const mos = Object.keys(d.byMonth).sort();
+        let trend = 'stable';
+        if (mos.length >= 2) {
+          const half = Math.floor(mos.length / 2);
+          const avg1 = mos.slice(0, half).reduce((s, m) => s + d.byMonth[m], 0) / half;
+          const avg2 = mos.slice(half).reduce((s, m) => s + d.byMonth[m], 0) / (mos.length - half);
+          if (avg2 > avg1 * 1.1) trend = 'up';
+          else if (avg2 < avg1 * 0.9) trend = 'down';
+        }
+        return {
+          name, pct, trend,
+          total: Math.round(d.total * 100) / 100,
+          txCount: d.txCount,
+          biggestTransaction: d.biggest ? `${d.biggest.desc} $${d.biggest.amount.toFixed(2)}` : '',
+        };
+      });
+
+    return {
+      totalIncome:       Math.round(totalIncome * 100) / 100,
+      totalSpending:     Math.round(totalSpending * 100) / 100,
+      netCashFlow:       Math.round(netCashFlow * 100) / 100,
+      avgMonthlySpending:Math.round((totalSpending / numMonths) * 100) / 100,
+      savingsRate, numMonths, categories,
+      incomeTxCount: catMap['Income']?.txCount || 0,
+    };
+  }
+
+  function _buildFinanceSummary(c) {
+    return [
+      `Period: ${c.numMonths} month(s)`,
+      `Total income: $${c.totalIncome.toFixed(2)} (${c.incomeTxCount} deposits)`,
+      `Total spending: $${c.totalSpending.toFixed(2)}`,
+      `Net cash flow: $${c.netCashFlow.toFixed(2)}`,
+      `Avg monthly spending: $${c.avgMonthlySpending.toFixed(2)}`,
+      c.savingsRate !== null ? `Savings rate: ${c.savingsRate}%` : '',
+      '',
+      'SPENDING BY CATEGORY:',
+      ...c.categories.map(cat =>
+        `  ${cat.name}: $${cat.total.toFixed(2)} (${cat.pct}% of spending, ${cat.txCount} transactions, trend: ${cat.trend}, biggest: ${cat.biggestTransaction})`
+      ),
+    ].filter(l => l !== null).join('\n');
+  }
+
+  function _mergeFinanceResult(computed, ai) {
+    return {
+      summary: {
+        totalIncome:        computed.totalIncome,
+        totalSpending:      computed.totalSpending,
+        netCashFlow:        computed.netCashFlow,
+        avgMonthlySpending: computed.avgMonthlySpending,
+        savingsRate:        computed.savingsRate,
+        topInsight:         ai.topInsight || '',
+      },
+      categories:   computed.categories,
+      insights:     ai.insights     || [],
+      subscriptions:ai.subscriptions|| [],
+      questions:    ai.questions    || [],
+      aiReplacesApp:ai.aiReplacesApp|| '',
+      actions:      ai.actions      || [],
+    };
+  }
+
   async function analyzeFinance(csvText) {
     const body = document.getElementById('finance-body');
     body.innerHTML = `
@@ -2544,30 +2682,17 @@ Be specific — name companies, people, numbers.`;
         <div style="font-size:.82rem;color:var(--text-mid)">Analyzing your transactions…</div>
       </div>`;
 
-    const MAX = 40000;
-    const data = csvText.length > MAX ? csvText.slice(0, MAX) + '\n…(truncated)' : csvText;
+    const computed = _parseFinanceCsv(csvText);
+    const summaryText = _buildFinanceSummary(computed);
 
-    const prompt = `You are a personal finance coach analyzing pre-categorized transaction data. You have been given computed totals and category summaries — do not attempt to recalculate or verify any numbers. Accept all figures as accurate.
+    const prompt = `You are a personal finance coach. The transaction totals below were computed by JavaScript and are exact — do not recalculate any numbers.
 
-Your job is to:
-1. Identify spending patterns and trends
-2. Flag likely subscription creep — recurring small charges that add up
-3. Observe where money is going relative to typical household priorities
-4. Note anything unusual or worth a second look
-5. Calculate savings rate only if income data is present
+${summaryText}
 
-Return ONLY valid JSON no markdown no preamble:
+Based only on the data above, return ONLY valid JSON no markdown no preamble:
 {
-  "summary": {
-    "totalIncome": number,
-    "totalSpending": number,
-    "netCashFlow": number,
-    "avgMonthlySpending": number,
-    "savingsRate": number_or_null,
-    "topInsight": "single most important observation in plain conversational language"
-  },
-  "categories": [{"name":"string","total":number,"pct":number,"txCount":number,"trend":"up|down|stable","biggestTransaction":"merchant name and amount"}],
-  "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words conversational","detail":"2 sentences — observations and patterns, not exact accounting. Reference actual merchant names.","impact":"dollar or pct or null"}],
+  "topInsight": "single most important observation in plain conversational language",
+  "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words conversational","detail":"2 sentences — patterns and observations. Reference actual merchant names.","impact":"dollar or pct or null"}],
   "subscriptions": [{"name":"service name","amount":number,"frequency":"monthly|annual"}],
   "questions": ["question1","question2","question3"],
   "aiReplacesApp": "one sentence vs Mint YNAB Copilot",
@@ -2575,17 +2700,14 @@ Return ONLY valid JSON no markdown no preamble:
 }
 
 Rules:
-- Never recalculate totals. Use only the numbers provided.
-- Present insights as observations, not exact accounting.
-- Keep language conversational, not clinical.
-- If a number seems off, note it as "worth verifying" rather than correcting it.
-
-TRANSACTIONS:
-${data}`;
+- Never recalculate totals — use only the numbers provided
+- Keep language conversational, not clinical
+- 4-7 insights with mixed types`;
 
     try {
-      const raw    = await callAI(prompt, false, 4096);
-      _financeResult = JSON.parse(extractJSON(raw));
+      const raw      = await callAI(prompt, false, 2048);
+      const aiResult = JSON.parse(extractJSON(raw));
+      _financeResult = _mergeFinanceResult(computed, aiResult);
       _financeChat   = [];
       renderFinanceResults(_financeResult, csvText);
     } catch (err) {
