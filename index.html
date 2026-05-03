@@ -2542,7 +2542,8 @@ Be specific — name companies, people, numbers.`;
     const MAX = 40000;
     const data = csvText.length > MAX ? csvText.slice(0, MAX) + '\n…(truncated)' : csvText;
 
-    const prompt = `You are a sharp honest personal financial analyst.
+    const prompt = `You are a financially savvy friend reviewing someone's bank transactions — not an accountant, not a bank. Your job is to spot patterns, surface observations, and ask smart questions.
+
 Analyze these bank transactions and return ONLY valid JSON no markdown no preamble:
 {
   "summary": {
@@ -2551,17 +2552,22 @@ Analyze these bank transactions and return ONLY valid JSON no markdown no preamb
     "netCashFlow": number,
     "avgMonthlySpending": number,
     "savingsRate": number_or_null,
-    "topInsight": "single most important observation specific and punchy"
+    "topInsight": "single most important observation in plain conversational language"
   },
-  "categories": [{"name":"string","total":number,"pct":number,"txCount":number,"trend":"up|down|stable","biggestTransaction":"merchant and amount"}],
-  "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words","detail":"2 sentences specific actual merchants","impact":"dollar or pct or null"}],
+  "categories": [{"name":"string","total":number,"pct":number,"txCount":number,"trend":"up|down|stable","biggestTransaction":"merchant name and amount"}],
+  "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words conversational","detail":"2 sentences — observations and patterns, not exact accounting. Reference actual merchant names.","impact":"dollar or pct or null"}],
   "subscriptions": [{"name":"service name","amount":number,"frequency":"monthly|annual"}],
   "questions": ["question1","question2","question3"],
   "aiReplacesApp": "one sentence vs Mint YNAB Copilot"
 }
-Rules: 4-7 insights mixed types. Reference actual merchant names and exact amounts.
-Identify all recurring subscriptions separately. Calculate savings rate if income present.
-Flag unusual spikes and duplicate charges. Sort categories by total descending.
+
+Rules:
+- Never re-sum or recalculate totals from scratch. The numbers you report are pattern-based approximations — do not present them as precise accounting figures.
+- Present insights as observations, not exact accounting. Say "gas is a big chunk of spending" not "you spent exactly $2,453.40 on gas."
+- Keep all language conversational and warm — like a smart friend, not a bank statement or audit report.
+- If a number looks inconsistent or surprising, flag it as "worth verifying" rather than correcting it.
+- Identify all recurring charges as subscriptions separately.
+- Sort categories by total descending. Use 4-7 insights with mixed types.
 
 TRANSACTIONS:
 ${data}`;
