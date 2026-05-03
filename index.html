@@ -997,7 +997,6 @@
         <div class="header-clock" id="header-clock">—</div>
         <div class="header-clockdate" id="header-clockdate"></div>
         <div class="header-divider"></div>
-        <button class="btn-icon" id="btn-customize" title="Customize appearance">🎨</button>
         <button class="btn-icon" id="btn-settings" title="Settings">⚙️</button>
       </div>
       <div id="setup-banner" style="display:none;flex-basis:100%;align-items:center;
@@ -1855,7 +1854,6 @@
     updateHeaderGreeting();
     updateHeaderDate();
     startClock();
-    document.getElementById('btn-customize').addEventListener('click', toggleCustomize);
     document.getElementById('btn-settings').addEventListener('click', openSettings);
     if (IS_LOCAL_FILE) {
       const b = document.getElementById('setup-banner');
