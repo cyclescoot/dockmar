@@ -1080,6 +1080,8 @@
 
     <footer class="footer">
       Built with Claude · Your data stays on your device
+      <span style="margin-left:14px;opacity:.35">·</span>
+      <span id="cost-footer" style="margin-left:8px"></span><button onclick="resetCostTracker()" style="margin-left:6px;background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.7rem;font-family:'DM Mono',monospace;padding:0;opacity:.5;text-decoration:underline;vertical-align:baseline">Reset</button>
     </footer>
   </div>
 
@@ -1615,6 +1617,7 @@
     });
     if (!res.ok) await _throwAPIError(res, 'Anthropic');
     const data = await res.json();
+    trackCost('anthropic', data.usage?.input_tokens||0, data.usage?.output_tokens||0);
     // Collect all text blocks (web search responses interleave tool_use blocks)
     return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
   }
@@ -1631,6 +1634,7 @@
     });
     if (!res.ok) await _throwAPIError(res, 'OpenAI');
     const data = await res.json();
+    trackCost('openai', data.usage?.prompt_tokens||0, data.usage?.completion_tokens||0);
     return data.choices[0].message.content;
   }
 
@@ -1647,6 +1651,7 @@
     });
     if (!res.ok) await _throwAPIError(res, 'Gemini');
     const data = await res.json();
+    trackCost('gemini', data.usageMetadata?.promptTokenCount||0, data.usageMetadata?.candidatesTokenCount||0);
     return data.candidates[0].content.parts[0].text;
   }
 
@@ -3373,6 +3378,48 @@ Question: ${question}`;
     }
   }
 
+  // ── Cost tracking ────────────────────────────────────────────────────────────
+  const COST_RATES = {
+    anthropic: { in: 0.000003,    out: 0.000015  },
+    openai:    { in: 0.0000025,   out: 0.00001   },
+    gemini:    { in: 0.000000075, out: 0.0000003 },
+  };
+  const COST_KEY  = 'dockmar_monthly_cost';
+  const MONTH_KEY = 'dockmar_cost_month';
+
+  function trackCost(provider, inputTokens, outputTokens) {
+    const rates = COST_RATES[provider];
+    if (!rates || (!inputTokens && !outputTokens)) return;
+    const now   = new Date();
+    const month = now.getFullYear() * 100 + now.getMonth();
+    const stored = parseInt(localStorage.getItem(MONTH_KEY) || '0', 10);
+    if (stored !== month) {
+      localStorage.setItem(COST_KEY, '0');
+      localStorage.setItem(MONTH_KEY, String(month));
+    }
+    const added = inputTokens * rates.in + outputTokens * rates.out;
+    const prev  = parseFloat(localStorage.getItem(COST_KEY) || '0');
+    localStorage.setItem(COST_KEY, String(prev + added));
+    renderCostFooter();
+  }
+
+  function renderCostFooter() {
+    const el = document.getElementById('cost-footer');
+    if (!el) return;
+    const now    = new Date();
+    const month  = now.getFullYear() * 100 + now.getMonth();
+    const stored = parseInt(localStorage.getItem(MONTH_KEY) || '0', 10);
+    const cost   = stored === month ? parseFloat(localStorage.getItem(COST_KEY) || '0') : 0;
+    el.textContent = 'This month: $' + cost.toFixed(2) + ' in AI costs';
+  }
+
+  function resetCostTracker() {
+    const now = new Date();
+    localStorage.setItem(COST_KEY, '0');
+    localStorage.setItem(MONTH_KEY, String(now.getFullYear() * 100 + now.getMonth()));
+    renderCostFooter();
+  }
+
   // Final initApp — includes all cards
   function initApp() {
     loadCustomStyles();
@@ -3388,6 +3435,7 @@ Question: ${question}`;
     initCouncil();
     initQuickAnswers();
     initExpandButtons();
+    renderCostFooter();
   }
   </script>
 
