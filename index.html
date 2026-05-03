@@ -2262,20 +2262,38 @@
         + `latitude=${lat}&longitude=${lon}`
         + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,'
         + 'precipitation_probability,wind_speed_10m,weather_code'
+        + '&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=5'
         + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
       const data = await res.json();
-      renderWeatherData(data.current);
+      renderWeatherData(data.current, data.daily);
     } catch (err) {
       showCardError(body, err.message);
     }
   }
 
-  function renderWeatherData(c) {
+  function renderWeatherData(c, daily) {
     const [emoji, label] = WMO[c.weather_code] ?? ['🌡️', 'Unknown'];
     const precip = c.precipitation_probability != null ? c.precipitation_probability + '%' : '—';
     const city   = LS.get(KEYS.USER_CITY) || '';
+
+    const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const forecastHtml = (daily?.time || []).slice(0, 5).map((dateStr, i) => {
+      const d     = new Date(dateStr + 'T12:00:00');
+      const day   = i === 0 ? 'Today' : DAY_NAMES[d.getDay()];
+      const [fe]  = WMO[daily.weather_code[i]] ?? ['🌡️'];
+      const hi    = Math.round(daily.temperature_2m_max[i]);
+      const lo    = Math.round(daily.temperature_2m_min[i]);
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;
+                flex:1;padding:8px 4px;background:rgba(255,255,255,0.05);border-radius:9px">
+        <div style="font-family:'Inter',sans-serif;font-size:.65rem;color:var(--text-dim)">${day}</div>
+        <div style="font-size:1rem;line-height:1">${fe}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:.75rem;color:var(--text-mid)">
+          <span style="color:var(--text)">${hi}°</span>/<span>${lo}°</span>
+        </div>
+      </div>`;
+    }).join('');
 
     document.getElementById('weather-body').innerHTML = `
       <div>
@@ -2309,6 +2327,7 @@
             <div class="stat-value">${precip}</div>
           </div>
         </div>
+        ${forecastHtml ? `<div style="display:flex;gap:5px;margin-top:10px">${forecastHtml}</div>` : ''}
       </div>`;
   }
 
