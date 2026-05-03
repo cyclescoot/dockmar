@@ -3,26 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Dashboard</title>
+  <title>Dockmar — Your world, simplified by AI</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Lora:ital,wght@1,400&display=swap" rel="stylesheet">
   <style>
     /* === CSS VARIABLES === */
     :root {
-      --bg: #080c14;
-      --surface: #0f1623;
-      --surface-alt: #161f2e;
-      --border: #1e2d45;
+      --bg: #1c1c1e;
+      --surface: #2c2c2e;
+      --surface-alt: #3a3a3c;
+      --border: rgba(255,255,255,0.08);
       --accent: #00d4ff;
       --emerald: #00e5b0;
       --gold: #f0b429;
       --green: #10b981;
       --red: #f05252;
       --purple: #a78bfa;
-      --text: #e8f0f8;
-      --text-mid: #8ba0bc;
-      --text-dim: #3d5270;
+      --text: #f5f5f7;
+      --text-mid: rgba(235,235,245,0.55);
+      --text-dim: rgba(235,235,245,0.28);
+      --apple-blue: #0a84ff;
+      --apple-green: #30d158;
+      --apple-orange: #ff9f0a;
+      --apple-purple: #bf5af2;
+      --apple-red: #ff453a;
+      --apple-cyan: #64d2ff;
       --radius: 16px;
       --radius-sm: 8px;
       --gap: 18px;
@@ -34,7 +40,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       font-weight: 400;
       min-height: 100vh;
       overflow-x: hidden;
@@ -45,9 +51,9 @@
     a { color: var(--accent); text-decoration: none; }
 
     /* === TYPOGRAPHY HELPERS === */
-    .font-syne { font-family: 'Syne', sans-serif; }
-    .font-mono { font-family: 'DM Mono', monospace; }
-    h1, h2, h3 { font-family: 'Syne', sans-serif; line-height: 1.2; }
+    .font-syne { font-family: 'Inter', sans-serif; font-weight: 600; }
+    .font-mono { font-family: 'SF Mono', 'DM Mono', monospace; }
+    h1, h2, h3 { font-family: 'Inter', sans-serif; font-weight: 600; line-height: 1.2; }
 
     /* === UTILITIES === */
     .hidden { display: none !important; }
@@ -185,16 +191,16 @@
       text-transform: uppercase;
     }
     .input {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.1);
       border-radius: var(--radius-sm);
-      color: var(--text);
+      color: #f5f5f7;
       padding: 10px 14px;
       font-size: 0.9rem;
       transition: border-color 0.2s;
       width: 100%;
     }
-    .input:focus { outline: none; border-color: var(--accent); }
+    .input:focus { outline: none; border-color: #0a84ff; }
     .input::placeholder { color: var(--text-dim); }
     .select {
       background: var(--bg);
@@ -213,10 +219,10 @@
     }
     .select:focus { outline: none; border-color: var(--accent); }
     .textarea {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.1);
       border-radius: var(--radius-sm);
-      color: var(--text);
+      color: #f5f5f7;
       padding: 10px 14px;
       font-size: 0.9rem;
       resize: vertical;
@@ -270,8 +276,8 @@
     .onboarding-card {
       width: 100%;
       max-width: 480px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: #2c2c2e;
+      border: 0.5px solid rgba(255,255,255,0.1);
       border-radius: var(--radius);
       padding: 40px;
       animation: fadeUp 0.4s ease;
@@ -291,15 +297,15 @@
     .step-dot.active { background: var(--accent); }
     .step-dot.done   { background: var(--emerald); }
     .onboarding-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 1.7rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 1.5rem;
       color: var(--text);
       margin-bottom: 8px;
     }
     .onboarding-sub {
-      font-size: 0.88rem;
-      color: var(--text-mid);
+      font-size: 0.85rem;
+      color: rgba(235,235,245,0.55);
       margin-bottom: 28px;
       line-height: 1.6;
     }
@@ -314,8 +320,8 @@
       align-items: center;
       gap: 14px;
       padding: 14px 18px;
-      background: var(--surface-alt);
-      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.05);
+      border: 0.5px solid rgba(255,255,255,0.1);
       border-radius: var(--radius-sm);
       color: var(--text);
       text-align: left;
@@ -328,8 +334,8 @@
       background: rgba(0,212,255,0.04);
     }
     .provider-btn.selected {
-      border-color: var(--accent);
-      background: rgba(0,212,255,0.08);
+      border-color: #0a84ff;
+      background: rgba(10,132,255,0.1);
     }
     .provider-icon {
       width: 38px;
@@ -358,22 +364,32 @@
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
+      background: #1c1c1e;
+      border-bottom: 0.5px solid rgba(255,255,255,0.08);
+      padding: 18px 24px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
     .header-greeting {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 1.05rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 1.2rem;
+      letter-spacing: -0.3px;
     }
     .header-date {
-      font-family: 'DM Mono', monospace;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      color: rgba(235,235,245,0.38);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    .header-clockdate {
+      font-family: 'Inter', sans-serif;
       font-size: 0.72rem;
-      color: var(--text-mid);
+      color: rgba(235,235,245,0.32);
+      font-weight: 400;
+      text-align: right;
       margin-top: 2px;
     }
     .header-right {
@@ -382,9 +398,11 @@
       gap: 6px;
     }
     .header-clock {
-      font-family: 'DM Mono', monospace;
-      font-size: 1rem;
-      color: var(--accent);
+      font-family: 'Inter', sans-serif;
+      font-size: 1.25rem;
+      color: #f5f5f7;
+      font-weight: 300;
+      letter-spacing: 0.5px;
       min-width: 68px;
       text-align: right;
     }
@@ -404,16 +422,17 @@
 
     /* === CARDS === */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: #2c2c2e;
+      border: 0.5px solid rgba(255,255,255,0.07);
       border-radius: var(--radius);
       padding: 20px 22px;
       opacity: 0;
       animation: fadeUp 0.5s ease forwards;
       transition: border-color 0.2s;
       min-height: 200px;
+      backdrop-filter: blur(20px);
     }
-    .card:hover { border-color: #273d5c; }
+    .card:hover { border-color: rgba(255,255,255,0.14); }
     .card:nth-child(1) { animation-delay: 0.05s; }
     .card:nth-child(2) { animation-delay: 0.10s; }
     .card:nth-child(3) { animation-delay: 0.15s; }
@@ -430,11 +449,11 @@
       margin-bottom: 16px;
     }
     .card-title {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.68rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
       font-weight: 500;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
+      color: rgba(235,235,245,0.35);
+      letter-spacing: 0.07em;
       text-transform: uppercase;
     }
     .card-actions { display: flex; align-items: center; gap: 4px; }
@@ -507,8 +526,8 @@
       bottom: 0;
       width: 420px;
       max-width: 100vw;
-      background: var(--surface);
-      border-left: 1px solid var(--border);
+      background: #2c2c2e;
+      border-left: 0.5px solid rgba(255,255,255,0.1);
       z-index: 201;
       overflow-y: auto;
       animation: slideInRight 0.25s ease;
@@ -531,9 +550,9 @@
     }
     .settings-section { margin-bottom: 24px; }
     .settings-section-label {
-      font-family: 'DM Mono', monospace;
+      font-family: 'Inter', sans-serif;
       font-size: 0.68rem;
-      color: var(--text-dim);
+      color: rgba(235,235,245,0.28);
       letter-spacing: 0.1em;
       text-transform: uppercase;
       margin-bottom: 14px;
@@ -568,10 +587,10 @@
     .footer {
       text-align: center;
       padding: 20px;
-      font-family: 'DM Mono', monospace;
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      border-top: 1px solid var(--border);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.68rem;
+      color: rgba(235,235,245,0.18);
+      border-top: 0.5px solid rgba(255,255,255,0.06);
     }
 
     /* === STAT GRID (weather) === */
@@ -582,23 +601,31 @@
       margin-top: 12px;
     }
     .stat-item {
-      background: var(--surface-alt);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 9px;
+      padding: 9px 11px;
     }
     .stat-label {
-      font-family: 'DM Mono', monospace;
-      font-size: 0.62rem;
-      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.6rem;
+      color: rgba(235,235,245,0.3);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       margin-bottom: 4px;
     }
     .stat-value {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 1.05rem;
-      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 1rem;
+      color: #f5f5f7;
+    }
+    .weather-temp-large {
+      font-size: 2.8rem;
+      font-weight: 200;
+      color: #f5f5f7;
+      letter-spacing: -2px;
+      line-height: 1;
+      font-family: 'Inter', sans-serif;
     }
 
     /* === AVATAR CIRCLES (council) === */
@@ -796,6 +823,39 @@
     }
     .council-move strong { color: var(--accent); }
 
+    .briefing-text {
+      font-size: 0.92rem;
+      line-height: 1.8;
+      color: var(--text);
+      font-weight: 300;
+      margin-bottom: 18px;
+      font-family: 'Inter', sans-serif;
+    }
+    .pull-quote {
+      border-left: 2px solid rgba(235,235,245,0.12);
+      margin: 0;
+      padding: 3px 0 3px 16px;
+    }
+    .pull-quote-text {
+      font-family: 'Lora', Georgia, serif;
+      font-style: italic;
+      font-size: 0.95rem;
+      color: rgba(235,235,245,0.58);
+      line-height: 1.65;
+      margin-bottom: 10px;
+    }
+    .pull-quote-attr {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+    .pull-quote-name {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(235,235,245,0.38);
+      font-family: 'Inter', sans-serif;
+    }
+
     /* === CARD MODAL === */
     .modal-panel {
       position: fixed;
@@ -923,9 +983,11 @@
       <div class="header-left">
         <div class="header-greeting font-syne" id="header-greeting">Good morning</div>
         <div class="header-date" id="header-date">—</div>
+        <div style="font-size:0.7rem;color:rgba(235,235,245,0.28);font-style:italic;margin-top:1px;font-family:'Inter',sans-serif;">Your world, simplified by AI</div>
       </div>
       <div class="header-right">
         <div class="header-clock" id="header-clock">—</div>
+        <div class="header-clockdate" id="header-clockdate"></div>
         <div class="header-divider"></div>
         <button class="btn-icon" id="btn-customize" title="Customize appearance">🎨</button>
         <button class="btn-icon" id="btn-settings" title="Settings">⚙️</button>
@@ -1735,6 +1797,8 @@
       const n = new Date();
       el.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
         .map(v => String(v).padStart(2, '0')).join(':');
+      const dc = document.getElementById('header-clockdate');
+      if (dc) dc.textContent = n.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     };
     tick();
     setInterval(tick, 1000);
