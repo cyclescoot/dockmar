@@ -1,0 +1,13 @@
+# Development files
+*-v1.html
+*-v2.html
+dashboard-setup.html
+*.bak
+
+# Test data
+*.csv
+test-*
+
+# OS files
+.DS_Store
+Thumbs.db
