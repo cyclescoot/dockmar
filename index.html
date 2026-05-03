@@ -2274,7 +2274,11 @@ Name a real council member in sentence 4.`;
 
     const isAnthropic = LS.get(KEYS.PROVIDER) === 'anthropic';
 
-    const prompt = `You are a sharp news curator. Search the web for today's most important and interesting stories.
+    const intro = isAnthropic
+      ? `You are a sharp news curator. Search the web for today's most important and interesting stories.`
+      : `You are a sharp news curator. Based on your knowledge of recent events, provide 5 important stories. Note: you cannot browse the web so use your most recent training knowledge and flag if a story may be outdated.`;
+
+    const prompt = `${intro}
 Return exactly 5 stories on these topics: ${topics}.
 
 Return ONLY valid JSON no markdown:
@@ -2290,10 +2294,9 @@ Return ONLY valid JSON no markdown:
   }]
 }
 
-Rules: Real current events only no hallucinations.
+Rules: Return ONLY the JSON object. No explanation before or after.
 Lead with most consequential story. Mix categories.
-Be specific — name companies, people, numbers.
-If unsure about a fact note it briefly.`;
+Be specific — name companies, people, numbers.`;
 
     try {
       const raw    = await callAI(prompt, isAnthropic, 1800);
