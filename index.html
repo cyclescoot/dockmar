@@ -2321,15 +2321,44 @@ Name a real council member in sentence 4.`;
   }
 
   function renderBriefingText(text, ts) {
-    const body = document.getElementById('briefing-body');
-    const age  = _briefingAge(ts);
-    const safe = escHtml(text).replace(/\n+/g, ' ');
+    const body      = document.getElementById('briefing-body');
+    const age       = _briefingAge(ts);
+    const cleaned   = text.replace(/\n+/g, ' ').trim();
+    const sentences = cleaned.split(/\.\s+/);
+
+    let bodyText = cleaned;
+    let pullHtml = '';
+
+    if (sentences.length >= 2) {
+      const last  = sentences[sentences.length - 1];
+      const prior = sentences.slice(0, -1).join('. ') + '.';
+
+      const councilNames = LS.getJSON(KEYS.COUNCIL) || [];
+      const matched = councilNames.find(n =>
+        last.toLowerCase().includes(n.split(' ')[0].toLowerCase())
+      );
+
+      if (matched) {
+        bodyText = prior;
+        const initials = matched.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase();
+        pullHtml = `
+          <blockquote class="pull-quote" style="margin-top:14px">
+            <div class="pull-quote-text">${escHtml(last)}</div>
+            <div class="pull-quote-attr">
+              <div class="avatar" style="width:24px;height:24px;font-size:9px;
+                background:rgba(255,159,10,0.18);color:#ff9f0a">${escHtml(initials)}</div>
+              <div class="pull-quote-name">${escHtml(matched)}</div>
+            </div>
+          </blockquote>`;
+      }
+    }
 
     body.innerHTML = `
       <div>
-        <p style="font-size:.92rem;line-height:1.8;color:var(--text)">${safe}</p>
-        <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:.64rem;
-                    color:var(--text-dim)">${age}</div>
+        <p class="briefing-text">${escHtml(bodyText)}</p>
+        ${pullHtml}
+        <div style="font-family:'Inter',sans-serif;font-size:.64rem;
+                    color:rgba(235,235,245,.25);margin-top:12px">${age}</div>
       </div>`;
   }
 
