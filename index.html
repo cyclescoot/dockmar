@@ -1227,14 +1227,20 @@
             <label class="field-label">News topics</label>
             <div id="settings-topics-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:6px"></div>
             <input type="text" class="input" id="settings-topics-input"
-              placeholder="Type a topic and press Enter — e.g. AI, climate, markets"
+              placeholder="Type a topic and press Enter"
               spellcheck="true" autocomplete="off">
+            <span class="text-xxs text-dim font-mono" style="margin-top:3px">
+              e.g. AI, climate, personal finance, Formula 1, geopolitics
+            </span>
           </div>
           <div class="field">
             <label class="field-label">Council members</label>
             <div id="settings-council-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:6px"></div>
             <input type="text" class="input" id="settings-council-input"
-              placeholder="Type a name and press Enter — e.g. Steve Jobs, Oprah" spellcheck="true">
+              placeholder="Type a name and press Enter" spellcheck="true">
+            <span class="text-xxs text-dim font-mono" style="margin-top:3px">
+              Best with well-known public figures — e.g. Warren Buffett, Brené Brown, Steve Jobs
+            </span>
           </div>
           <div class="field">
             <label class="field-label">Calendar iCal URL</label>
@@ -2454,12 +2460,22 @@ Name a real council member in sentence 4.`;
 
     const isAnthropic = LS.get(KEYS.PROVIDER) === 'anthropic';
 
+    // Filter out gibberish topics — must have a vowel or be a short acronym (AI, GDP, F1)
+    const isValidTopic = t => /[aeiou]/i.test(t) || /^[A-Z0-9]{1,5}$/i.test(t.trim());
+    const allTopics  = topics.split(',').map(t => t.trim()).filter(Boolean);
+    const goodTopics = allTopics.filter(isValidTopic);
+    const badTopics  = allTopics.filter(t => !isValidTopic(t));
+    if (!goodTopics.length) {
+      showCardError(body, 'No recognizable topics found. Update your news topics in ⚙️ Settings.');
+      return;
+    }
+
     const intro = isAnthropic
       ? `You are a sharp news curator. Search the web for today's most important and interesting stories.`
       : `You are a sharp news curator. Based on your knowledge of recent events, provide 5 important stories. Note: you cannot browse the web so use your most recent training knowledge and flag if a story may be outdated.`;
 
     const prompt = `${intro}
-Return exactly 5 stories on these topics: ${topics}.
+Return exactly 5 stories on these topics: ${goodTopics.join(', ')}.
 
 Return ONLY valid JSON no markdown:
 {
@@ -2485,17 +2501,20 @@ Be specific — name companies, people, numbers.`;
       const label   = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
       LS.set(KEYS.NEWS_CACHE, JSON.stringify({ stories, label }));
       LS.set(KEYS.NEWS_TS, String(Date.now()));
-      renderNewsList(stories, isAnthropic);
+      renderNewsList(stories, isAnthropic, badTopics);
       document.getElementById('news-timestamp').textContent = label;
     } catch (err) {
       showCardError(body, err.message);
     }
   }
 
-  function renderNewsList(stories, isAnthropic) {
+  function renderNewsList(stories, isAnthropic, skipped = []) {
     const body = document.getElementById('news-body');
 
-    const webNote = '';
+    const webNote = skipped.length
+      ? `<div style="margin-bottom:10px;font-size:.7rem;color:var(--text-dim);font-family:'DM Mono',monospace">
+           Skipped unrecognized topic${skipped.length > 1 ? 's' : ''}: ${skipped.map(t => `"${t}"`).join(', ')}
+         </div>` : '';
 
     const SENTIMENTS = {
       positive: { arrow: '↑', color: 'var(--green)'    },
