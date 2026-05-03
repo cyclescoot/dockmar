@@ -2802,14 +2802,6 @@ Rules:
       </div>` : '';
 
     const qs = r.questions || [];
-    const chipsHtml = qs.length ? `
-      <div style="margin-bottom:14px">
-        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text-dim);
-              letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Follow-up questions</div>
-        <div class="question-chips" id="finance-chips">
-          ${qs.map((q,i)=>`<button class="question-chip" data-qi="${i}">${escHtml(q)}</button>`).join('')}
-        </div>
-      </div>` : '';
 
     const aiLine = r.aiReplacesApp ? `
       <div style="font-size:.72rem;color:var(--text-dim);font-family:'DM Mono',monospace;
@@ -2840,33 +2832,38 @@ Rules:
         </div>
       </div>`;
 
-    const chatHtml = `
-      <div style="margin-bottom:8px">
-        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text-dim);
-              letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Chat</div>
-        <div class="chat-messages" id="finance-chat"></div>
-        <div class="chat-input-row" style="margin-top:10px">
-          <input type="text" class="input" id="finance-chat-input"
-            placeholder="Ask about your transactions…">
-          <button class="btn btn-primary btn-sm" id="finance-chat-send">Ask</button>
-        </div>
-      </div>`;
-
     const privacyHtml = `
-      <div style="font-size:.68rem;color:var(--text-dim);font-family:'DM Mono',monospace;line-height:1.6">
+      <div style="font-size:.68rem;color:var(--text-dim);font-family:'DM Mono',monospace;
+            line-height:1.6;margin-top:8px">
         Your financial data goes directly to ${escHtml(provider)}. Nothing stored on any server. Ever.
       </div>`;
 
     const sectionLabel = t => `<div style="font-family:'DM Mono',monospace;font-size:.65rem;
       color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">${t}</div>`;
 
-    body.innerHTML = `<div style="overflow-y:auto;max-height:580px;padding-right:4px;
-        scrollbar-width:thin;scrollbar-color:var(--border) transparent">
-      ${summaryHtml}
-      ${catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : ''}
-      ${insightsHtml? sectionLabel('Insights')             + `<div style="margin-bottom:14px">${insightsHtml}</div>` : ''}
-      ${actionsHtml}
-      ${subsHtml}${chipsHtml}${aiLine}${saveHtml}${chatHtml}${privacyHtml}
+    body.innerHTML = `<div style="display:flex;flex-direction:column;max-height:580px">
+      <div id="finance-scroll" style="flex:1;overflow-y:auto;min-height:0;padding-right:4px;
+          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+        ${summaryHtml}
+        ${catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : ''}
+        ${insightsHtml? sectionLabel('Insights')             + `<div style="margin-bottom:14px">${insightsHtml}</div>` : ''}
+        ${actionsHtml}${subsHtml}${aiLine}${saveHtml}
+        <div class="chat-messages" id="finance-chat"></div>
+        ${privacyHtml}
+      </div>
+      <div style="flex-shrink:0;border-top:1px solid var(--border);padding-top:10px;
+            background:var(--surface)">
+        ${qs.length ? `<div style="margin-bottom:8px">
+          <div class="question-chips" id="finance-chips">
+            ${qs.map((q,i)=>`<button class="question-chip" data-qi="${i}">${escHtml(q)}</button>`).join('')}
+          </div>
+        </div>` : ''}
+        <div class="chat-input-row">
+          <input type="text" class="input" id="finance-chat-input"
+            placeholder="Ask about your transactions…">
+          <button class="btn btn-primary btn-sm" id="finance-chat-send">Ask</button>
+        </div>
+      </div>
     </div>`;
 
     // Wire chips
@@ -2907,7 +2904,8 @@ Rules:
     chatEl.insertAdjacentHTML('beforeend',
       `<div id="${tid}" style="display:flex;gap:8px;align-items:center;font-size:.82rem;color:var(--text-dim)">
         <div class="spinner"></div>Thinking…</div>`);
-    chatEl.scrollTop = chatEl.scrollHeight;
+    const _fScroll = document.getElementById('finance-scroll');
+    if (_fScroll) _fScroll.scrollTop = _fScroll.scrollHeight;
 
     const history = _financeChat.slice(0,-1)
       .map(m => `${m.role==='user'?'User':'Analyst'}: ${m.content}`).join('\n');
@@ -2929,7 +2927,7 @@ Answer specifically and concisely based on their data. Under 120 words.`;
       const el = document.getElementById(tid);
       if (el) el.innerHTML = `<span style="color:var(--red)">${escHtml(err.message)}</span>`;
     }
-    chatEl.scrollTop = chatEl.scrollHeight;
+    if (_fScroll) _fScroll.scrollTop = _fScroll.scrollHeight;
   }
 
   function _appendChatBubble(container, text, role) {
