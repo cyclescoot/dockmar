@@ -1322,6 +1322,8 @@
     STYLES:      'customStyles',
     BRIEFING:        'briefingText',
     BRIEFING_TS:     'briefingTimestamp',
+    NEWS_CACHE:      'newsCache',
+    NEWS_TS:         'newsTimestamp',
     MODEL_ANTHROPIC: 'modelAnthropic',
     MODEL_OPENAI:    'modelOpenAI',
     MODEL_GEMINI:    'modelGemini',
@@ -1988,6 +1990,7 @@
     if (cityStr) initWeather();
     if (newKey) { hideBanner(); initFinance(); initQuickAnswers(); }
     // Always refresh these cards — their content depends on topics/names which just changed
+    initCalendar();
     if (LS.getDecoded(KEYS.API_KEY)) {
       initBriefing(); initNews(); initCouncil();
     } else {
@@ -2279,6 +2282,7 @@
   // ═══════════════════════════════════════════════════════
 
   const BRIEFING_TTL = 6 * 60 * 60 * 1000; // 6 hours in ms
+  const NEWS_TTL     = 1 * 60 * 60 * 1000; // 1 hour in ms
 
   function initBriefing() {
     if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('briefing-body'); return; }
@@ -2395,11 +2399,18 @@ Name a real council member in sentence 4.`;
   }
 
   function loadNews() {
-    if (!LS.get(KEYS.NEWS_TOPICS)) {
-      renderNewsSetup();
-    } else {
-      fetchNews();
+    if (!LS.get(KEYS.NEWS_TOPICS)) { renderNewsSetup(); return; }
+    const cached = LS.get(KEYS.NEWS_CACHE);
+    const ts     = Number(LS.get(KEYS.NEWS_TS) || 0);
+    if (cached && (Date.now() - ts) < NEWS_TTL) {
+      try {
+        const d = JSON.parse(cached);
+        renderNewsList(d.stories || [], LS.get(KEYS.PROVIDER) === 'anthropic');
+        document.getElementById('news-timestamp').textContent = d.label || '';
+        return;
+      } catch {}
     }
+    fetchNews();
   }
 
   function renderNewsSetup() {
@@ -2471,9 +2482,11 @@ Be specific — name companies, people, numbers.`;
       const raw    = await callAI(prompt, isAnthropic, 1800);
       const data   = JSON.parse(extractJSON(raw));
       const stories = Array.isArray(data.stories) ? data.stories : [];
+      const label   = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      LS.set(KEYS.NEWS_CACHE, JSON.stringify({ stories, label }));
+      LS.set(KEYS.NEWS_TS, String(Date.now()));
       renderNewsList(stories, isAnthropic);
-      document.getElementById('news-timestamp').textContent =
-        new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      document.getElementById('news-timestamp').textContent = label;
     } catch (err) {
       showCardError(body, err.message);
     }
