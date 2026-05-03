@@ -953,13 +953,19 @@
         <div class="onboarding-title">Paste your API key</div>
         <div class="onboarding-sub" id="key-subtitle">Stored only in this browser. Sent directly to your chosen AI — never to any other server.</div>
         <div class="field" style="margin-bottom:20px">
-          <label class="field-label">API Key</label>
+          <label class="field-label" style="display:flex;justify-content:space-between;align-items:center">
+            API Key
+            <a id="key-link" href="#" target="_blank" rel="noopener"
+              style="font-size:.72rem;color:var(--accent);font-weight:400;text-decoration:none"></a>
+          </label>
           <input type="password" class="input" id="input-apikey" placeholder="Paste key here…" autocomplete="off" spellcheck="false">
+          <div id="key-format-error" style="display:none;font-size:.72rem;color:var(--red);margin-top:5px"></div>
+          <div style="font-size:.68rem;color:var(--text-dim);font-family:'SF Mono','DM Mono',monospace;margin-top:6px;line-height:1.5">
+            Typical cost for daily use: under $1/month. Google Gemini is free to start.
+          </div>
         </div>
         <button class="btn btn-primary" id="btn-key-next" style="width:100%">Continue →</button>
-        <div class="onboarding-note" id="key-note">
-          Get your key: <a id="key-link" href="#" target="_blank" rel="noopener">provider dashboard →</a>
-        </div>
+        <div id="key-test-result" style="min-height:24px;margin-top:10px;text-align:center;font-size:.78rem"></div>
       </div>
 
       <!-- Step 3: Name -->
@@ -1512,19 +1518,22 @@
     anthropic: {
       placeholder: 'sk-ant-api03-…',
       keyUrl:      'https://console.anthropic.com/settings/keys',
-      keyLabel:    'Anthropic Console → API Keys',
+      keyLabel:    'Get your free Anthropic key',
+      keyPrefix:   'sk-ant-',
       subtitle:    'Stored only here. Sent directly to api.anthropic.com — nowhere else.',
     },
     openai: {
       placeholder: 'sk-proj-…',
       keyUrl:      'https://platform.openai.com/api-keys',
-      keyLabel:    'OpenAI Platform → API Keys',
+      keyLabel:    'Get your OpenAI key',
+      keyPrefix:   'sk-',
       subtitle:    'Stored only here. Sent directly to api.openai.com — nowhere else.',
     },
     gemini: {
       placeholder: 'AIzaSy…',
-      keyUrl:      'https://aistudio.google.com/app/apikey',
-      keyLabel:    'Google AI Studio → Get API Key',
+      keyUrl:      'https://aistudio.google.com/apikey',
+      keyLabel:    'Get your free Gemini key',
+      keyPrefix:   'AIza',
       subtitle:    'Stored only here. Sent directly to generativelanguage.googleapis.com — nowhere else.',
     },
   };
@@ -1544,6 +1553,19 @@
     document.getElementById('btn-key-next').addEventListener('click', handleKeyNext);
     document.getElementById('btn-name-next').addEventListener('click', handleNameNext);
     document.getElementById('input-apikey').addEventListener('keydown', e => { if (e.key === 'Enter') handleKeyNext(); });
+    document.getElementById('input-apikey').addEventListener('input', () => {
+      const key = document.getElementById('input-apikey').value.trim();
+      const err = document.getElementById('key-format-error');
+      if (key.length < 6 || !selectedProvider) { err.style.display = 'none'; return; }
+      const prefix = PROVIDER_INFO[selectedProvider]?.keyPrefix;
+      const names  = { anthropic: 'Anthropic', openai: 'OpenAI', gemini: 'Gemini' };
+      if (prefix && !key.startsWith(prefix)) {
+        err.textContent    = `That doesn't look like a ${names[selectedProvider]} key — make sure you copied the full key`;
+        err.style.display  = 'block';
+      } else {
+        err.style.display  = 'none';
+      }
+    });
     document.getElementById('input-name').addEventListener('keydown',   e => { if (e.key === 'Enter') handleNameNext(); });
   }
 
@@ -1556,10 +1578,14 @@
 
     if (n === 2) {
       const info = PROVIDER_INFO[selectedProvider];
-      document.getElementById('key-subtitle').textContent = info.subtitle;
-      document.getElementById('input-apikey').placeholder  = info.placeholder;
-      document.getElementById('key-link').href             = info.keyUrl;
-      document.getElementById('key-link').textContent      = info.keyLabel + ' →';
+      document.getElementById('key-subtitle').textContent     = info.subtitle;
+      document.getElementById('input-apikey').placeholder     = info.placeholder;
+      document.getElementById('key-link').href                = info.keyUrl;
+      document.getElementById('key-link').textContent         = info.keyLabel + ' →';
+      document.getElementById('key-format-error').style.display = 'none';
+      document.getElementById('key-test-result').innerHTML    = '';
+      document.getElementById('btn-key-next').textContent     = 'Continue →';
+      document.getElementById('btn-key-next').disabled        = false;
       document.getElementById('step-key').classList.remove('hidden');
       setTimeout(() => document.getElementById('input-apikey').focus(), 50);
     } else if (n === 3) {
@@ -1570,12 +1596,73 @@
     }
   }
 
-  function handleKeyNext() {
+  async function handleKeyNext() {
     const key = document.getElementById('input-apikey').value.trim();
     if (!key) { shakeInput('input-apikey'); return; }
-    LS.set(KEYS.PROVIDER, selectedProvider);
-    LS.setEncoded(KEYS.API_KEY, key);
-    goToStep(3);
+
+    const btn    = document.getElementById('btn-key-next');
+    const result = document.getElementById('key-test-result');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:flex;align-items:center;justify-content:center;gap:8px"><div class="spinner"></div>Testing your key…</span>';
+    result.innerHTML = '';
+
+    try {
+      await _testApiKey(selectedProvider, key);
+      btn.innerHTML = '✓';
+      result.innerHTML = '<span style="color:var(--emerald)">Key verified ✓</span>';
+      setTimeout(() => {
+        LS.set(KEYS.PROVIDER, selectedProvider);
+        LS.setEncoded(KEYS.API_KEY, key);
+        goToStep(3);
+      }, 1000);
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Continue →';
+      result.innerHTML = `<span style="color:var(--red)">${err.message}</span>`;
+    }
+  }
+
+  async function _testApiKey(provider, key) {
+    const PROMPT = 'Reply with the single word: ready';
+    const PROVIDER_LINKS = {
+      anthropic: 'https://console.anthropic.com',
+      openai:    'https://platform.openai.com',
+      gemini:    'https://aistudio.google.com',
+    };
+    let res;
+    try {
+      if (provider === 'gemini') {
+        res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: PROMPT }] }], generationConfig: { maxOutputTokens: 5 } }),
+        });
+      } else if (provider === 'anthropic') {
+        res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 5, messages: [{ role: 'user', content: PROMPT }] }),
+          credentials: 'omit',
+        });
+      } else if (provider === 'openai') {
+        res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 5, messages: [{ role: 'user', content: PROMPT }] }),
+        });
+      }
+    } catch {
+      throw new Error('Connection failed — check your internet and try again');
+    }
+    if (res.ok) return;
+    let detail = '';
+    try { const d = await res.json(); detail = (d.error?.message || '').toLowerCase(); } catch {}
+    const link = `<a href="${PROVIDER_LINKS[provider]}" target="_blank" style="color:var(--accent)">${PROVIDER_LINKS[provider]}</a>`;
+    if (res.status === 401 || res.status === 403) throw new Error('Key rejected — check you copied it completely');
+    if (res.status === 429) throw new Error('Rate limited — wait a moment and try again');
+    if (detail.includes('credit') || detail.includes('quota') || detail.includes('billing') || res.status === 402)
+      throw new Error(`Out of credits — add funds at ${link}`);
+    throw new Error('Connection failed — check your internet and try again');
   }
 
   function handleNameNext() {
