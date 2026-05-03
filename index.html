@@ -2594,7 +2594,7 @@ Be specific — name companies, people, numbers.`;
     ['Personal Care',      ['salon','barber','great clips','nail salon','massage','sephora','ulta','planet fitness','la fitness','equinox','anytime fitness','ymca','orange theory','crossfit','peloton','classpass']],
     ['Pets',               ['petco','petsmart','chewy','pet supplies','veterinary','animal hospital','banfield','vca vet','rover']],
     ['Giving & Charity',   ['church','tithe','donation','charity','gofundme']],
-    ['Financial & Banking',['atm fee','wire transfer','overdraft','late fee','annual fee','interest charge','loan payment','robinhood','coinbase','fidelity','vanguard','schwab','acorns','betterment']],
+    ['Financial & Banking',['online payment','card payment','credit card payment','ach debit','ach credit','ach web','ach ppd','domestic wire','outgoing wire','wire transfer','bank transfer','transfer to','transfer from','bill pay','billpay','citi card','chase card','amex payment','discover payment','capital one payment','bank of america payment','wells fargo payment','us bank payment','synchrony payment','barclays payment','card online payment','autopay payment','atm fee','overdraft','late fee','annual fee','interest charge','loan payment','robinhood','coinbase','fidelity','vanguard','schwab','acorns','betterment']],
   ];
 
   function _parseCsvRow(line) {
@@ -2651,6 +2651,7 @@ Be specific — name companies, people, numbers.`;
     const catMap = {};
     const months = new Set();
     const txByDesc = {};
+    const otherTxList = [];
 
     for (const line of dataRows) {
       if (!line.trim()) continue;
@@ -2688,6 +2689,7 @@ Be specific — name companies, people, numbers.`;
         bucket(matched);
         if (!txByDesc[desc]) txByDesc[desc] = [];
         txByDesc[desc].push(Math.abs(amount));
+        if (matched === 'Other') otherTxList.push({ desc, amount: Math.abs(amount) });
       }
     }
 
@@ -2737,6 +2739,7 @@ Be specific — name companies, people, numbers.`;
       avgMonthlySpending:Math.round((totalSpending / numMonths) * 100) / 100,
       savingsRate, numMonths, categories, subscriptions,
       incomeTxCount: catMap['Income']?.txCount || 0,
+      otherTxList: otherTxList.sort((a, b) => b.amount - a.amount).slice(0, 25),
     };
   }
 
@@ -2758,6 +2761,15 @@ Be specific — name companies, people, numbers.`;
       ...c.subscriptions.map(s =>
         `  ${s.name}: $${s.amount.toFixed(2)}/${s.frequency}`
       ),
+      ...(() => {
+        const otherCat = c.categories.find(cat => cat.name === 'Other');
+        if (!otherCat || otherCat.pct <= 20 || !c.otherTxList?.length) return [];
+        return [
+          '',
+          `UNCATEGORIZED TRANSACTIONS (Other is ${otherCat.pct}% of spending — top items by amount):`,
+          ...c.otherTxList.map(tx => `  ${tx.desc}: $${tx.amount.toFixed(2)}`),
+        ];
+      })(),
     ].filter(l => l !== null).join('\n');
   }
 
@@ -2928,7 +2940,7 @@ Rules:
 
     body.innerHTML = `<div style="display:flex;flex-direction:column;max-height:580px">
       <div id="finance-scroll" style="flex:1;overflow-y:auto;min-height:0;padding-right:4px;
-          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+          padding-bottom:16px;scrollbar-width:thin;scrollbar-color:var(--border) transparent">
         ${summaryHtml}
         ${catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : ''}
         ${insightsHtml? sectionLabel('Insights')             + `<div style="margin-bottom:14px">${insightsHtml}</div>` : ''}
