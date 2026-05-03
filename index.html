@@ -3001,8 +3001,8 @@ Rules:
       <div style="flex-shrink:0;border-top:1px solid var(--border);padding-top:10px;
             background:var(--surface)">
         ${qs.length ? `<div style="margin-bottom:8px">
-          <div class="question-chips" id="finance-chips">
-            ${qs.map((q,i)=>`<button class="question-chip" data-qi="${i}">${escHtml(q)}</button>`).join('')}
+          <div id="finance-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">
+            ${qs.map((q,i)=>`<button data-qi="${i}" style="display:inline-block;padding:4px 11px;font-size:0.75rem;background:rgba(255,255,255,0.04);border:0.5px solid rgba(255,255,255,0.09);border-radius:20px;color:rgba(235,235,245,0.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;cursor:pointer">${escHtml(q)}</button>`).join('')}
           </div>
         </div>` : ''}
         <div class="chat-input-row">
