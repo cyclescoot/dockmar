@@ -2597,10 +2597,55 @@ Be specific — name companies, people, numbers.`;
     ['Financial & Banking',['atm fee','wire transfer','overdraft','late fee','annual fee','interest charge','loan payment','robinhood','coinbase','fidelity','vanguard','schwab','acorns','betterment']],
   ];
 
+  function _parseCsvRow(line) {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { fields.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    fields.push(cur.trim());
+    return fields;
+  }
+
+  function _parseAmount(str) {
+    if (!str) return NaN;
+    str = str.trim();
+    const neg = str.startsWith('(') && str.endsWith(')');
+    const n = parseFloat(str.replace(/[^0-9.-]/g, ''));
+    return neg ? -Math.abs(n) : n;
+  }
+
+  function _parseYearMonth(str) {
+    if (!str) return '';
+    // Strip "PENDING - " prefix
+    str = str.replace(/^pending\s*-?\s*/i, '').trim();
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}/.test(str)) return str.slice(0, 7);
+    // M/D/YYYY or MM/DD/YYYY
+    const m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (m) return `${m[3]}-${m[1].padStart(2,'0')}`;
+    return '';
+  }
+
   function _parseFinanceCsv(csvText) {
     const rows = csvText.replace(/\r/g, '').trim().split('\n');
+
+    // Detect header and column positions by name
     const firstRow = rows[0].toLowerCase();
-    const dataRows = (firstRow.includes('date') || firstRow.includes('description')) ? rows.slice(1) : rows;
+    const hasHeader = firstRow.includes('date') || firstRow.includes('description') || firstRow.includes('amount');
+    const headers   = hasHeader ? _parseCsvRow(rows[0]).map(h => h.toLowerCase()) : [];
+    const dataRows  = hasHeader ? rows.slice(1) : rows;
+
+    const colIdx = (terms, fallback) => {
+      const i = headers.findIndex(h => terms.some(t => h.includes(t)));
+      return i >= 0 ? i : fallback;
+    };
+    const dateCol = colIdx(['date'],                          0);
+    const descCol = colIdx(['description','payee','memo','narrative'], 1);
+    const amtCol  = colIdx(['amount','debit/credit','transaction amount'], 2);
 
     let totalIncome = 0, totalSpending = 0;
     const catMap = {};
@@ -2609,15 +2654,15 @@ Be specific — name companies, people, numbers.`;
 
     for (const line of dataRows) {
       if (!line.trim()) continue;
-      const firstComma = line.indexOf(',');
-      const lastComma  = line.lastIndexOf(',');
-      if (firstComma === -1 || lastComma === firstComma) continue;
-      const date   = line.slice(0, firstComma).trim();
-      const desc   = line.slice(firstComma + 1, lastComma).trim().replace(/^"|"$/g, '');
-      const amount = parseFloat(line.slice(lastComma + 1));
-      if (isNaN(amount)) continue;
+      const cols = _parseCsvRow(line);
+      if (cols.length < 2) continue;
 
-      const mo = date.slice(0, 7);
+      const date   = (cols[dateCol] || '').replace(/^"|"$/g, '').trim();
+      const desc   = (cols[descCol] || '').replace(/^"|"$/g, '').trim();
+      const amount = _parseAmount(cols[amtCol] || '');
+      if (isNaN(amount) || amount === 0) continue;
+
+      const mo = _parseYearMonth(date);
       if (mo) months.add(mo);
 
       const bucket = name => {
