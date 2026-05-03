@@ -2355,7 +2355,7 @@ Be specific — name companies, people, numbers.`;
         </div>`;
     }).join('');
 
-    body.innerHTML = webNote + (storiesHtml || '<div class="card-empty">No stories returned.</div>');
+    body.innerHTML = `<div>${webNote}${storiesHtml || '<div class="card-empty">No stories returned.</div>'}</div>`;
 
     body.querySelectorAll('.news-item-header').forEach(hdr => {
       hdr.addEventListener('click', () => {
