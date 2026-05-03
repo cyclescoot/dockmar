@@ -2565,6 +2565,7 @@ Be specific — name companies, people, numbers.`;
     let totalIncome = 0, totalSpending = 0;
     const catMap = {};
     const months = new Set();
+    const txByDesc = {};
 
     for (const line of dataRows) {
       if (!line.trim()) continue;
@@ -2600,10 +2601,25 @@ Be specific — name companies, people, numbers.`;
           if (kws.some(kw => dl.includes(kw))) { matched = cat; break; }
         }
         bucket(matched);
+        if (!txByDesc[desc]) txByDesc[desc] = [];
+        txByDesc[desc].push(Math.abs(amount));
       }
     }
 
+    // Detect subscriptions: same merchant, same exact amount, 2+ occurrences
     const numMonths = Math.max(months.size, 1);
+    const subscriptions = Object.entries(txByDesc)
+      .filter(([, amts]) => {
+        if (amts.length < 2) return false;
+        return amts.every(a => Math.abs(a - amts[0]) < 0.02);
+      })
+      .map(([name, amts]) => ({
+        name,
+        amount: amts[0],
+        frequency: amts.length / numMonths >= 0.9 ? 'monthly' : 'annual',
+      }))
+      .sort((a, b) => b.amount - a.amount);
+
     const netCashFlow = totalIncome - totalSpending;
     const savingsRate = totalIncome > 0 ? Math.round((netCashFlow / totalIncome) * 10000) / 100 : null;
 
@@ -2634,7 +2650,7 @@ Be specific — name companies, people, numbers.`;
       totalSpending:     Math.round(totalSpending * 100) / 100,
       netCashFlow:       Math.round(netCashFlow * 100) / 100,
       avgMonthlySpending:Math.round((totalSpending / numMonths) * 100) / 100,
-      savingsRate, numMonths, categories,
+      savingsRate, numMonths, categories, subscriptions,
       incomeTxCount: catMap['Income']?.txCount || 0,
     };
   }
@@ -2652,6 +2668,11 @@ Be specific — name companies, people, numbers.`;
       ...c.categories.map(cat =>
         `  ${cat.name}: $${cat.total.toFixed(2)} (${cat.pct}% of spending, ${cat.txCount} transactions, trend: ${cat.trend}, biggest: ${cat.biggestTransaction})`
       ),
+      '',
+      'RECURRING CHARGES DETECTED (same amount every occurrence):',
+      ...c.subscriptions.map(s =>
+        `  ${s.name}: $${s.amount.toFixed(2)}/${s.frequency}`
+      ),
     ].filter(l => l !== null).join('\n');
   }
 
@@ -2667,7 +2688,7 @@ Be specific — name companies, people, numbers.`;
       },
       categories:   computed.categories,
       insights:     ai.insights     || [],
-      subscriptions:ai.subscriptions|| [],
+      subscriptions:computed.subscriptions,
       questions:    ai.questions    || [],
       aiReplacesApp:ai.aiReplacesApp|| '',
       actions:      ai.actions      || [],
