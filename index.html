@@ -1215,17 +1215,22 @@
             <input type="password" class="input" id="settings-apikey"
               placeholder="Paste new key to update" autocomplete="off" spellcheck="false">
             <span class="text-dim text-xxs font-mono" id="settings-apikey-hint"></span>
+            <a id="settings-apikey-link" href="#" target="_blank" rel="noopener"
+              style="font-size:.72rem;color:var(--accent);text-decoration:none;margin-top:4px;display:inline-block"></a>
           </div>
           <div class="field">
             <label class="field-label" style="display:flex;justify-content:space-between;align-items:center">
               Model ID
               <a id="settings-model-docs" href="https://docs.anthropic.com/en/docs/about-claude/models"
                 target="_blank" rel="noopener"
-                style="font-size:.7rem;color:var(--cyan);opacity:.75;font-weight:400;text-decoration:none">Model docs ↗</a>
+                style="font-size:.7rem;color:var(--cyan);opacity:.75;font-weight:400;text-decoration:none">See current models →</a>
             </label>
             <input type="text" class="input" id="settings-model"
               placeholder="claude-sonnet-4-5" autocomplete="off" spellcheck="false">
-            <span class="text-dim text-xxs font-mono" style="margin-top:3px">Leave blank to use the built-in default</span>
+            <span class="text-dim text-xxs font-mono" style="margin-top:3px">Leave blank to use the recommended model. Only change this if your model is deprecated.</span>
+          </div>
+          <div style="font-size:.72rem;color:var(--text-dim);font-style:italic;line-height:1.5;margin-top:2px">
+            Typical cost: under $1/month for daily use. Gemini is free to start.
           </div>
         </div>
       </div>
@@ -1946,9 +1951,9 @@
   }
 
   const _MODEL_DEFAULTS = {
-    anthropic: { model: 'claude-sonnet-4-5', docs: 'https://docs.anthropic.com/en/docs/about-claude/models' },
-    openai:    { model: 'gpt-4o',            docs: 'https://platform.openai.com/docs/models' },
-    gemini:    { model: 'gemini-2.5-flash',  docs: 'https://ai.google.dev/gemini-api/docs/models' },
+    anthropic: { model: 'claude-sonnet-4-5', docs: 'https://docs.anthropic.com/en/docs/about-claude/models', keyUrl: 'https://console.anthropic.com/settings/keys', keyLabel: 'Get Anthropic key →' },
+    openai:    { model: 'gpt-4o',            docs: 'https://platform.openai.com/docs/models',               keyUrl: 'https://platform.openai.com/api-keys',         keyLabel: 'Get OpenAI key →' },
+    gemini:    { model: 'gemini-2.5-flash',  docs: 'https://ai.google.dev/gemini-api/docs/models',         keyUrl: 'https://aistudio.google.com/apikey',            keyLabel: 'Get free Gemini key →' },
   };
   const _MODEL_KEY = { anthropic: 'MODEL_ANTHROPIC', openai: 'MODEL_OPENAI', gemini: 'MODEL_GEMINI' };
 
@@ -1958,7 +1963,9 @@
     const saved = LS.get(KEYS[_MODEL_KEY[provider]]) || '';
     document.getElementById('settings-model').placeholder = d.model;
     document.getElementById('settings-model').value       = saved;
-    document.getElementById('settings-model-docs').href  = d.docs;
+    document.getElementById('settings-model-docs').href   = d.docs;
+    const keyLink = document.getElementById('settings-apikey-link');
+    if (keyLink) { keyLink.href = d.keyUrl; keyLink.textContent = d.keyLabel; }
   }
 
   function _getModel(provider) {
