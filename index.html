@@ -2836,7 +2836,7 @@ Rules:
         <div style="font-size:.8rem;color:var(--text-mid)">Save this month's data?</div>
         <div style="display:flex;gap:8px">
           <button class="btn btn-primary btn-sm" id="btn-fsave">Save</button>
-          <button class="btn btn-ghost btn-sm" id="btn-fskip">Skip</button>
+          <button class="btn btn-ghost btn-sm" onclick="renderFinanceDropZone();closeModal()">Clear Data</button>
         </div>
       </div>`;
 
@@ -2883,14 +2883,6 @@ Rules:
       document.getElementById('finance-save-row').innerHTML =
         '<span style="font-size:.78rem;color:var(--emerald)">✓ Saved for next time</span>';
     });
-    document.getElementById('btn-fskip').addEventListener('click', () => {
-      const row = document.getElementById('finance-save-row');
-      row.innerHTML = `
-        <span style="font-size:.78rem;color:var(--text-dim)">Not saved.</span>
-        <button class="btn btn-secondary btn-sm" id="btn-finance-newfile">↑ Analyze a new file</button>`;
-      document.getElementById('btn-finance-newfile').addEventListener('click', renderFinanceDropZone);
-    });
-
     // Wire chat
     const chatSend = () => {
       const v = document.getElementById('finance-chat-input').value.trim();
