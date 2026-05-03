@@ -1232,7 +1232,7 @@
             <input type="text" class="input" id="settings-topics-input"
               placeholder="Type a topic and press Enter"
               spellcheck="true" autocomplete="off">
-            <span class="text-xxs text-dim font-mono" style="margin-top:3px">
+            <span id="settings-topics-hint" class="text-xxs text-dim font-mono" style="margin-top:3px">
               e.g. AI, climate, personal finance, Formula 1, geopolitics
             </span>
           </div>
@@ -1815,7 +1815,13 @@
       if (e.key !== 'Enter') return;
       e.preventDefault();
       const v = e.target.value.trim();
-      if (v && !_settingsTopics.includes(v)) {
+      if (!v) return;
+      if (!_isValidTopic(v)) {
+        const hint = document.getElementById('settings-topics-hint');
+        if (hint) { hint.textContent = `"${v}" doesn't look like a topic — try something like "AI" or "climate".`; hint.style.color = 'var(--red)'; setTimeout(() => { hint.textContent = ''; hint.style.color = ''; }, 3000); }
+        return;
+      }
+      if (!_settingsTopics.includes(v)) {
         _settingsTopics.push(v);
         _renderTopicsTags();
         e.target.value = '';
@@ -2292,6 +2298,7 @@
 
   const BRIEFING_TTL = 6 * 60 * 60 * 1000; // 6 hours in ms
   const NEWS_TTL     = 1 * 60 * 60 * 1000; // 1 hour in ms
+  const _isValidTopic = t => /[aeiou]/i.test(t) || /^[A-Z0-9]{1,5}$/i.test(t.trim());
 
   function initBriefing() {
     if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('briefing-body'); return; }
@@ -2464,7 +2471,7 @@ Name a real council member in sentence 4.`;
     const isAnthropic = LS.get(KEYS.PROVIDER) === 'anthropic';
 
     // Filter out gibberish topics — must have a vowel or be a short acronym (AI, GDP, F1)
-    const isValidTopic = t => /[aeiou]/i.test(t) || /^[A-Z0-9]{1,5}$/i.test(t.trim());
+    const isValidTopic = _isValidTopic;
     const allTopics  = topics.split(',').map(t => t.trim()).filter(Boolean);
     const goodTopics = allTopics.filter(isValidTopic);
     const badTopics  = allTopics.filter(t => !isValidTopic(t));
