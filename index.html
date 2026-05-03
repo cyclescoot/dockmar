@@ -3409,11 +3409,12 @@ Flag patterns with 📋 Pattern spotted: [one sentence].`;
       _councilHistory.push({ role: 'assistant', content: reply });
       document.getElementById(tid)?.remove();
       _appendCouncilBubble(chatEl, reply, 'ai', names);
+      const _newBubble = chatEl.lastElementChild;
+      if (_newBubble) chatEl.scrollTop = _newBubble.offsetTop;
     } catch (err) {
       const el = document.getElementById(tid);
       if (el) el.innerHTML = `<span style="color:var(--red)">${escHtml(err.message)}</span>`;
     }
-    chatEl.scrollTop = chatEl.scrollHeight;
   }
 
   function _appendCouncilBubble(container, text, role, names) {
