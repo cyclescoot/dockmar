@@ -2542,9 +2542,16 @@ Be specific — name companies, people, numbers.`;
     const MAX = 40000;
     const data = csvText.length > MAX ? csvText.slice(0, MAX) + '\n…(truncated)' : csvText;
 
-    const prompt = `You are a financially savvy friend reviewing someone's bank transactions — not an accountant, not a bank. Your job is to spot patterns, surface observations, and ask smart questions.
+    const prompt = `You are a personal finance coach analyzing pre-categorized transaction data. You have been given computed totals and category summaries — do not attempt to recalculate or verify any numbers. Accept all figures as accurate.
 
-Analyze these bank transactions and return ONLY valid JSON no markdown no preamble:
+Your job is to:
+1. Identify spending patterns and trends
+2. Flag likely subscription creep — recurring small charges that add up
+3. Observe where money is going relative to typical household priorities
+4. Note anything unusual or worth a second look
+5. Calculate savings rate only if income data is present
+
+Return ONLY valid JSON no markdown no preamble:
 {
   "summary": {
     "totalIncome": number,
@@ -2558,16 +2565,15 @@ Analyze these bank transactions and return ONLY valid JSON no markdown no preamb
   "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words conversational","detail":"2 sentences — observations and patterns, not exact accounting. Reference actual merchant names.","impact":"dollar or pct or null"}],
   "subscriptions": [{"name":"service name","amount":number,"frequency":"monthly|annual"}],
   "questions": ["question1","question2","question3"],
-  "aiReplacesApp": "one sentence vs Mint YNAB Copilot"
+  "aiReplacesApp": "one sentence vs Mint YNAB Copilot",
+  "actions": ["action1","action2","action3"]
 }
 
 Rules:
-- Never re-sum or recalculate totals from scratch. The numbers you report are pattern-based approximations — do not present them as precise accounting figures.
-- Present insights as observations, not exact accounting. Say "gas is a big chunk of spending" not "you spent exactly $2,453.40 on gas."
-- Keep all language conversational and warm — like a smart friend, not a bank statement or audit report.
-- If a number looks inconsistent or surprising, flag it as "worth verifying" rather than correcting it.
-- Identify all recurring charges as subscriptions separately.
-- Sort categories by total descending. Use 4-7 insights with mixed types.
+- Never recalculate totals. Use only the numbers provided.
+- Present insights as observations, not exact accounting.
+- Keep language conversational, not clinical.
+- If a number seems off, note it as "worth verifying" rather than correcting it.
 
 TRANSACTIONS:
 ${data}`;
@@ -2662,6 +2668,18 @@ ${data}`;
             line-height:1.5;padding:8px 10px;background:var(--surface-alt);
             border-radius:var(--radius-sm);margin-bottom:14px">${escHtml(r.aiReplacesApp)}</div>` : '';
 
+    const actionsHtml = (r.actions||[]).length ? `
+      <div style="padding:12px 14px;background:rgba(52,211,153,0.06);
+            border:1px solid rgba(52,211,153,0.2);border-radius:var(--radius-sm);
+            margin-bottom:14px">
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--emerald);
+              letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">This week's actions</div>
+        ${(r.actions||[]).map((a,i) => `<div style="font-size:.84rem;line-height:1.6;padding:4px 0;
+          ${i>0?'border-top:1px solid rgba(52,211,153,0.1)':''}">
+          <span style="font-family:'DM Mono',monospace;color:var(--emerald);margin-right:6px">${i+1}.</span>${escHtml(a)}
+        </div>`).join('')}
+      </div>` : '';
+
     const provider = LS.get(KEYS.PROVIDER) || 'your AI';
     const saveHtml = `
       <div id="finance-save-row" style="padding:10px 12px;background:var(--surface-alt);
@@ -2699,6 +2717,7 @@ ${data}`;
       ${summaryHtml}
       ${catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : ''}
       ${insightsHtml? sectionLabel('Insights')             + `<div style="margin-bottom:14px">${insightsHtml}</div>` : ''}
+      ${actionsHtml}
       ${subsHtml}${chipsHtml}${aiLine}${saveHtml}${chatHtml}${privacyHtml}
     </div>`;
 
