@@ -1212,14 +1212,16 @@
         <div class="settings-fields">
           <div class="field">
             <label class="field-label">News topics</label>
-            <input type="text" class="input" id="settings-topics"
-              placeholder="e.g. technology, climate, markets" spellcheck="true">
+            <div id="settings-topics-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:6px"></div>
+            <input type="text" class="input" id="settings-topics-input"
+              placeholder="Type a topic and press Enter — e.g. AI, climate, markets"
+              spellcheck="true" autocomplete="off">
           </div>
           <div class="field">
             <label class="field-label">Council members</label>
             <div id="settings-council-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:6px"></div>
             <input type="text" class="input" id="settings-council-input"
-              placeholder="Type a name and press Enter" spellcheck="true">
+              placeholder="Type a name and press Enter — e.g. Steve Jobs, Oprah" spellcheck="true">
           </div>
           <div class="field">
             <label class="field-label">Calendar iCal URL</label>
@@ -1724,6 +1726,7 @@
   // ─── SETTINGS PANEL ───────────────────────────────────
 
   let _settingsCouncil = [];
+  let _settingsTopics  = [];
 
   function initSettings() {
     document.getElementById('btn-settings-close').addEventListener('click', closeSettings);
@@ -1742,6 +1745,16 @@
       if (confirm('Reset everything? All settings and saved data will be erased.')) {
         LS.clear();
         location.reload();
+      }
+    });
+    document.getElementById('settings-topics-input').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const v = e.target.value.trim();
+      if (v && !_settingsTopics.includes(v)) {
+        _settingsTopics.push(v);
+        _renderTopicsTags();
+        e.target.value = '';
       }
     });
     document.getElementById('settings-council-input').addEventListener('keydown', e => {
@@ -1810,7 +1823,9 @@
       ? 'Saved — ends in ···' + rawKey.slice(-4) : 'No key saved';
     document.getElementById('settings-name').value     = LS.get(KEYS.USER_NAME)   || '';
     document.getElementById('settings-city').value     = LS.get(KEYS.USER_CITY)   || '';
-    document.getElementById('settings-topics').value   = LS.get(KEYS.NEWS_TOPICS) || '';
+    const savedTopics = LS.get(KEYS.NEWS_TOPICS) || '';
+    _settingsTopics = savedTopics ? savedTopics.split(',').map(t => t.trim()).filter(Boolean) : [];
+    _renderTopicsTags();
     document.getElementById('settings-calendar').value = LS.get(KEYS.CAL_URL)     || '';
     _renderSettingsTags();
     document.getElementById('settings-overlay').classList.remove('hidden');
@@ -1820,6 +1835,22 @@
   function closeSettings() {
     document.getElementById('settings-overlay').classList.add('hidden');
     document.body.style.overflow = '';
+  }
+
+  function _renderTopicsTags() {
+    const c = document.getElementById('settings-topics-tags');
+    if (!c) return;
+    c.innerHTML = '';
+    _settingsTopics.forEach((topic, i) => {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.innerHTML = `${escHtml(topic)} <span class="tag-remove">×</span>`;
+      t.querySelector('.tag-remove').addEventListener('click', () => {
+        _settingsTopics.splice(i, 1);
+        _renderTopicsTags();
+      });
+      c.appendChild(t);
+    });
   }
 
   function _renderSettingsTags() {
@@ -1849,7 +1880,9 @@
     const newKey   = document.getElementById('settings-apikey').value.trim();
     const name     = document.getElementById('settings-name').value.trim();
     const cityStr  = document.getElementById('settings-city').value.trim();
-    const topics   = document.getElementById('settings-topics').value.trim();
+    const pendingTopic = document.getElementById('settings-topics-input').value.trim();
+    if (pendingTopic && !_settingsTopics.includes(pendingTopic)) _settingsTopics.push(pendingTopic);
+    const topics = _settingsTopics.join(', ');
     const calUrl   = document.getElementById('settings-calendar').value.trim();
 
     LS.set(KEYS.PROVIDER, provider);
