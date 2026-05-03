@@ -1,0 +1,3223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* === CSS VARIABLES === */
+    :root {
+      --bg: #080c14;
+      --surface: #0f1623;
+      --surface-alt: #161f2e;
+      --border: #1e2d45;
+      --accent: #00d4ff;
+      --emerald: #00e5b0;
+      --gold: #f0b429;
+      --green: #10b981;
+      --red: #f05252;
+      --purple: #a78bfa;
+      --text: #e8f0f8;
+      --text-mid: #8ba0bc;
+      --text-dim: #3d5270;
+      --radius: 16px;
+      --radius-sm: 8px;
+      --gap: 18px;
+    }
+
+    /* === RESET === */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+    }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input, textarea, select { font-family: inherit; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* === TYPOGRAPHY HELPERS === */
+    .font-syne { font-family: 'Syne', sans-serif; }
+    .font-mono { font-family: 'DM Mono', monospace; }
+    h1, h2, h3 { font-family: 'Syne', sans-serif; line-height: 1.2; }
+
+    /* === UTILITIES === */
+    .hidden { display: none !important; }
+    .text-accent  { color: var(--accent); }
+    .text-emerald { color: var(--emerald); }
+    .text-gold    { color: var(--gold); }
+    .text-green   { color: var(--green); }
+    .text-red     { color: var(--red); }
+    .text-purple  { color: var(--purple); }
+    .text-mid     { color: var(--text-mid); }
+    .text-dim     { color: var(--text-dim); }
+    .text-sm  { font-size: 0.85rem; }
+    .text-xs  { font-size: 0.75rem; }
+    .text-xxs { font-size: 0.68rem; }
+
+    /* === BUTTONS === */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: var(--bg);
+    }
+    .btn-primary:hover { background: #00bcdf; }
+    .btn-primary:disabled {
+      background: var(--border);
+      color: var(--text-dim);
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: var(--surface-alt);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-mid);
+    }
+    .btn-ghost:hover { color: var(--text); }
+    .btn-sm { padding: 6px 12px; font-size: 0.8rem; }
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-sm);
+      background: transparent;
+      color: var(--text-mid);
+      border: 1px solid transparent;
+      font-size: 1rem;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .btn-icon:hover {
+      background: var(--surface-alt);
+      border-color: var(--border);
+      color: var(--text);
+    }
+
+    /* === SPINNER === */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+    .spinner-lg { width: 30px; height: 30px; border-width: 3px; }
+
+    /* === BADGES === */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .badge-accent   { background: rgba(0,212,255,0.12); color: var(--accent); }
+    .badge-gold     { background: rgba(240,180,41,0.12); color: var(--gold); }
+    .badge-emerald  { background: rgba(0,229,176,0.12); color: var(--emerald); }
+    .badge-purple   { background: rgba(167,139,250,0.12); color: var(--purple); }
+    .badge-red      { background: rgba(240,82,82,0.12); color: var(--red); }
+    .badge-dim      { background: var(--surface-alt); color: var(--text-mid); }
+
+    /* === TAGS (for names / topics) === */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.82rem;
+      color: var(--text);
+    }
+    .tag-remove {
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    .tag-remove:hover { color: var(--red); }
+
+    /* === FORM ELEMENTS === */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-mid);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+      width: 100%;
+    }
+    .input:focus { outline: none; border-color: var(--accent); }
+    .input::placeholder { color: var(--text-dim); }
+    .select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 32px 10px 14px;
+      font-size: 0.9rem;
+      width: 100%;
+      cursor: pointer;
+      -webkit-appearance: none;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238ba0bc' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    .select:focus { outline: none; border-color: var(--accent); }
+    .textarea {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 14px;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 80px;
+      width: 100%;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+    }
+    .textarea:focus { outline: none; border-color: var(--accent); }
+    .textarea::placeholder { color: var(--text-dim); }
+
+    /* === DIVIDER === */
+    .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+    /* === PROGRESS BAR === */
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 0.6s ease;
+    }
+
+    /* === ANIMATIONS === */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes slideInRight {
+      from { transform: translateX(100%); }
+      to   { transform: translateX(0); }
+    }
+
+    /* === ONBOARDING === */
+    .onboarding {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .onboarding-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      animation: fadeUp 0.4s ease;
+    }
+    .onboarding-steps {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+    .step-dot {
+      height: 3px;
+      border-radius: 2px;
+      flex: 1;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    .step-dot.active { background: var(--accent); }
+    .step-dot.done   { background: var(--emerald); }
+    .onboarding-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.7rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .onboarding-sub {
+      font-size: 0.88rem;
+      color: var(--text-mid);
+      margin-bottom: 28px;
+      line-height: 1.6;
+    }
+    .provider-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .provider-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      text-align: left;
+      transition: all 0.2s;
+      cursor: pointer;
+      width: 100%;
+    }
+    .provider-btn:hover {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.04);
+    }
+    .provider-btn.selected {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.08);
+    }
+    .provider-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .provider-name  { font-weight: 600; font-size: 0.95rem; }
+    .provider-detail { font-size: 0.78rem; color: var(--text-mid); margin-top: 2px; }
+    .provider-badge { margin-left: auto; flex-shrink: 0; }
+    .onboarding-note {
+      font-size: 0.77rem;
+      color: var(--text-dim);
+      font-family: 'DM Mono', monospace;
+      text-align: center;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    /* === HEADER === */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-greeting {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .header-date {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-mid);
+      margin-top: 2px;
+    }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-clock {
+      font-family: 'DM Mono', monospace;
+      font-size: 1rem;
+      color: var(--accent);
+      min-width: 68px;
+      text-align: right;
+    }
+    .header-divider { width: 1px; height: 20px; background: var(--border); margin: 0 4px; }
+
+    /* === MAIN LAYOUT === */
+    .main-container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap);
+    }
+
+    /* === CARDS === */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+      transition: border-color 0.2s;
+      min-height: 200px;
+    }
+    .card:hover { border-color: #273d5c; }
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.20s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.30s; }
+    .card:nth-child(7) { animation-delay: 0.35s; }
+    .card:nth-child(8) { animation-delay: 0.40s; }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .card-actions { display: flex; align-items: center; gap: 4px; }
+    .card-loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+    }
+    .card-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      gap: 8px;
+      text-align: center;
+      color: var(--text-mid);
+      font-size: 0.88rem;
+    }
+    .card-error {
+      background: rgba(240,82,82,0.06);
+      border: 1px solid rgba(240,82,82,0.2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 0.82rem;
+      color: var(--red);
+    }
+
+    /* Placeholder (dashed) card */
+    .card-placeholder {
+      border-style: dashed;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: default;
+      min-height: 180px;
+    }
+    .card-placeholder:hover { border-color: var(--text-dim); }
+    .card-placeholder-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+    .card-placeholder-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      line-height: 2;
+    }
+
+    /* === SETTINGS OVERLAY === */
+    .overlay-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,12,20,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      animation: fadeIn 0.2s ease;
+    }
+    .settings-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 420px;
+      max-width: 100vw;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 201;
+      overflow-y: auto;
+      animation: slideInRight 0.25s ease;
+      padding: 28px 24px 40px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .settings-panel::-webkit-scrollbar { width: 4px; }
+    .settings-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .settings-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .settings-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+    .settings-section { margin-bottom: 24px; }
+    .settings-section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .settings-fields { display: flex; flex-direction: column; gap: 14px; }
+
+    /* === CUSTOMIZE PANEL === */
+    .customize-panel {
+      position: fixed;
+      top: 62px;
+      right: 16px;
+      width: 300px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      z-index: 150;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      animation: fadeUp 0.2s ease;
+    }
+    .customize-title {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-mid);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .customize-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+    /* === FOOTER === */
+    .footer {
+      text-align: center;
+      padding: 20px;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      border-top: 1px solid var(--border);
+    }
+
+    /* === STAT GRID (weather) === */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .stat-item {
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .stat-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text);
+    }
+
+    /* === AVATAR CIRCLES (council) === */
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 0.65rem;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* === CHAT INTERFACE === */
+    .chat-messages {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .chat-input-row { display: flex; gap: 8px; margin-top: 12px; }
+    .chat-input-row .input { flex: 1; }
+    .chat-bubble {
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+    .chat-bubble-user {
+      background: rgba(0,212,255,0.07);
+      border: 1px solid rgba(0,212,255,0.15);
+    }
+    .chat-bubble-ai {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+    }
+    .chat-bubble strong { color: var(--accent); }
+    .chat-bubble em { color: var(--text-mid); font-style: normal; }
+
+    /* === QUESTION CHIPS === */
+    .question-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .question-chip {
+      padding: 6px 12px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .question-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* === DRAG DROP ZONE === */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 28px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--accent);
+      background: rgba(0,212,255,0.04);
+    }
+    .drop-zone-icon { font-size: 2rem; margin-bottom: 8px; display: block; }
+    .drop-zone-text { font-size: 0.82rem; color: var(--text-mid); }
+
+    /* === NEWS ITEMS === */
+    .news-item { border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .news-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .news-item-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .news-item-header:hover .news-headline { color: var(--accent); }
+    .news-sentiment { font-size: 0.9rem; flex-shrink: 0; margin-top: 2px; }
+    .news-headline { font-weight: 600; font-size: 0.88rem; flex: 1; line-height: 1.45; transition: color 0.15s; }
+    .news-expand { padding-top: 10px; font-size: 0.83rem; color: var(--text-mid); line-height: 1.65; }
+    .news-expand-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 5px 10px;
+      margin-top: 8px;
+      font-size: 0.8rem;
+    }
+    .news-expand-lbl {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      padding-top: 2px;
+      white-space: nowrap;
+    }
+    .news-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    /* === CALENDAR EVENTS === */
+    .event-day-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 0 4px;
+    }
+    .event-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .event-item:last-child { border-bottom: none; }
+    .event-time {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--accent);
+      min-width: 52px;
+      padding-top: 2px;
+    }
+    .event-name { font-size: 0.86rem; font-weight: 500; }
+    .event-location { font-size: 0.76rem; color: var(--text-mid); margin-top: 2px; }
+
+    /* === FINANCE === */
+    .finance-summary-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .finance-category-item { margin-bottom: 12px; }
+    .finance-category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      font-size: 0.82rem;
+    }
+    .finance-insight {
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      font-size: 0.83rem;
+      line-height: 1.55;
+    }
+    .finance-insight-title { font-weight: 600; margin-bottom: 3px; font-size: 0.84rem; }
+    .insight-warning      { background: rgba(240,180,41,0.08); border: 1px solid rgba(240,180,41,0.2); }
+    .insight-opportunity  { background: rgba(0,229,176,0.08); border: 1px solid rgba(0,229,176,0.2); }
+    .insight-positive     { background: rgba(167,139,250,0.08); border: 1px solid rgba(167,139,250,0.2); }
+    .insight-neutral      { background: var(--surface-alt); border: 1px solid var(--border); }
+    .insight-warning .finance-insight-title   { color: var(--gold); }
+    .insight-opportunity .finance-insight-title { color: var(--emerald); }
+    .insight-positive .finance-insight-title  { color: var(--purple); }
+    .insight-neutral .finance-insight-title   { color: var(--text-mid); }
+
+    /* === COUNCIL === */
+    .council-setup-nudges {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 16px 0;
+    }
+    .council-nudge {
+      padding: 10px 14px;
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    .council-nudge:hover { border-color: var(--border); color: var(--text); }
+    .council-response {
+      padding: 12px;
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+    }
+    .council-response-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .council-pattern {
+      padding: 8px 12px;
+      background: rgba(167,139,250,0.07);
+      border: 1px solid rgba(167,139,250,0.15);
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      margin-top: 10px;
+    }
+    .council-move {
+      padding: 10px 12px;
+      background: rgba(0,212,255,0.07);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+      margin-top: 10px;
+    }
+    .council-move strong { color: var(--accent); }
+
+    /* === MOBILE RESPONSIVE === */
+    @media (max-width: 900px) {
+      .card-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .header { padding: 12px 16px; }
+      .header-greeting { font-size: 0.95rem; }
+      .header-clock { font-size: 0.88rem; min-width: 60px; }
+      .main-container { padding: 16px 12px 32px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .settings-panel { width: 100vw; border-left: none; }
+      .customize-panel { right: 8px; left: 8px; width: auto; }
+      .onboarding-card { padding: 28px 20px; }
+      .finance-summary-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════
+       ONBOARDING
+  ══════════════════════════════════════════════ -->
+  <div id="onboarding" class="onboarding hidden">
+    <div class="onboarding-card">
+      <div class="onboarding-steps">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+
+      <!-- Step 1: Provider -->
+      <div id="step-provider">
+        <div class="onboarding-title">Choose your AI</div>
+        <div class="onboarding-sub">Your dashboard uses AI for news, briefings, and financial insights. Pick a provider — you'll need an API key on the next screen.</div>
+        <div class="provider-grid" id="provider-grid">
+          <button class="provider-btn" data-provider="anthropic">
+            <div class="provider-icon" style="background:rgba(0,212,255,0.1)">✦</div>
+            <div style="flex:1">
+              <div class="provider-name">Anthropic Claude</div>
+              <div class="provider-detail">claude-sonnet-4-20250514 · live web search for news</div>
+            </div>
+          </button>
+          <button class="provider-btn" data-provider="openai">
+            <div class="provider-icon" style="background:rgba(16,185,129,0.1)">◎</div>
+            <div style="flex:1">
+              <div class="provider-name">OpenAI GPT-4o</div>
+              <div class="provider-detail">gpt-4o · news uses model knowledge only</div>
+            </div>
+          </button>
+          <button class="provider-btn" data-provider="gemini">
+            <div class="provider-icon" style="background:rgba(240,180,41,0.1)">◈</div>
+            <div style="flex:1">
+              <div class="provider-name">Google Gemini</div>
+              <div class="provider-detail">gemini-2.0-flash · free tier available</div>
+            </div>
+            <span class="provider-badge"><span class="badge badge-emerald">Free</span></span>
+          </button>
+        </div>
+        <button class="btn btn-primary" id="btn-provider-next" style="width:100%" disabled>Continue →</button>
+        <div class="onboarding-note">Set a spending limit at your provider's dashboard to protect yourself.</div>
+      </div>
+
+      <!-- Step 2: API Key -->
+      <div id="step-key" class="hidden">
+        <div class="onboarding-title">Paste your API key</div>
+        <div class="onboarding-sub" id="key-subtitle">Stored only in this browser. Sent directly to your chosen AI — never to any other server.</div>
+        <div class="field" style="margin-bottom:20px">
+          <label class="field-label">API Key</label>
+          <input type="password" class="input" id="input-apikey" placeholder="Paste key here…" autocomplete="off" spellcheck="false">
+        </div>
+        <button class="btn btn-primary" id="btn-key-next" style="width:100%">Continue →</button>
+        <div class="onboarding-note" id="key-note">
+          Get your key: <a id="key-link" href="#" target="_blank" rel="noopener">provider dashboard →</a>
+        </div>
+      </div>
+
+      <!-- Step 3: Name -->
+      <div id="step-name" class="hidden">
+        <div class="onboarding-title">What should we call you?</div>
+        <div class="onboarding-sub">Used in your morning briefing and across the dashboard.</div>
+        <div class="field" style="margin-bottom:20px">
+          <label class="field-label">Your name</label>
+          <input type="text" class="input" id="input-name" placeholder="Alex" autocomplete="given-name">
+        </div>
+        <button class="btn btn-primary" id="btn-name-next" style="width:100%">Open my dashboard →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       APP
+  ══════════════════════════════════════════════ -->
+  <div id="app" class="hidden">
+
+    <header class="header" style="flex-wrap:wrap">
+      <div class="header-left">
+        <div class="header-greeting font-syne" id="header-greeting">Good morning</div>
+        <div class="header-date" id="header-date">—</div>
+      </div>
+      <div class="header-right">
+        <div class="header-clock" id="header-clock">—</div>
+        <div class="header-divider"></div>
+        <button class="btn-icon" id="btn-customize" title="Customize appearance">🎨</button>
+        <button class="btn-icon" id="btn-settings" title="Settings">⚙️</button>
+      </div>
+      <div id="setup-banner" style="display:none;flex-basis:100%;align-items:center;
+            justify-content:center;gap:12px;padding:7px 0 5px;
+            border-top:1px solid var(--border);font-size:.78rem;color:var(--text-mid)">
+        <span>✨ Add AI features free — 2 min setup</span>
+        <button class="btn btn-primary btn-sm" id="btn-banner-cta"
+          style="font-size:.75rem;padding:5px 12px">Get started →</button>
+      </div>
+    </header>
+
+    <!-- CUSTOMIZE PANEL -->
+    <div id="customize-panel" class="customize-panel hidden">
+      <div class="customize-title">Customize appearance</div>
+      <textarea class="textarea" id="customize-input" rows="3"
+        placeholder="e.g. 'Make it warmer and golden' or 'Bigger fonts and softer borders'"></textarea>
+      <div class="customize-actions">
+        <button class="btn btn-primary btn-sm" id="btn-apply-styles">Apply</button>
+        <button class="btn btn-secondary btn-sm" id="btn-reset-styles">Reset</button>
+        <button class="btn btn-ghost btn-sm" id="btn-cancel-styles">Cancel</button>
+      </div>
+      <div id="customize-spinner" class="hidden" style="margin-top:10px;display:flex;align-items:center;gap:8px;font-size:0.8rem;color:var(--text-mid)">
+        <div class="spinner"></div> Generating styles…
+      </div>
+    </div>
+
+    <div class="main-container">
+      <div class="card-grid" id="card-grid">
+
+        <!-- 1. WEATHER -->
+        <div class="card" id="card-weather">
+          <div class="card-header">
+            <span class="card-title">Weather</span>
+            <div class="card-actions" id="weather-actions"></div>
+          </div>
+          <div id="weather-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 2. CALENDAR -->
+        <div class="card" id="card-calendar">
+          <div class="card-header">
+            <span class="card-title">Calendar</span>
+            <div class="card-actions"></div>
+          </div>
+          <div id="calendar-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 3. FINANCE -->
+        <div class="card" id="card-finance">
+          <div class="card-header">
+            <span class="card-title">Finance</span>
+            <div class="card-actions"></div>
+          </div>
+          <div id="finance-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 4. DAILY BRIEFING -->
+        <div class="card" id="card-briefing">
+          <div class="card-header">
+            <span class="card-title">Daily Briefing</span>
+            <div class="card-actions">
+              <button class="btn-icon" id="btn-briefing-refresh" title="Regenerate briefing">↻</button>
+            </div>
+          </div>
+          <div id="briefing-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 5. NEWS -->
+        <div class="card" id="card-news">
+          <div class="card-header">
+            <span class="card-title">News</span>
+            <div class="card-actions">
+              <span class="font-mono text-xxs text-dim" id="news-timestamp"></span>
+              <button class="btn-icon" id="btn-news-refresh" title="Refresh news">↻</button>
+            </div>
+          </div>
+          <div id="news-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 6. COUNCIL -->
+        <div class="card" id="card-council">
+          <div class="card-header">
+            <span class="card-title">The Council</span>
+            <div class="card-actions">
+              <button class="btn-icon" id="btn-council-edit" title="Edit council">✎</button>
+              <button class="btn-icon" id="btn-council-new" title="New session">⊕</button>
+            </div>
+          </div>
+          <div id="council-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 7. QUICK ANSWERS -->
+        <div class="card" id="card-qa">
+          <div class="card-header">
+            <span class="card-title">Quick Answers</span>
+            <div class="card-actions"></div>
+          </div>
+          <div id="qa-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
+
+        <!-- 8. PLACEHOLDER -->
+        <div class="card card-placeholder">
+          <div class="card-placeholder-title">+ More cards coming</div>
+          <div class="card-placeholder-sub">
+            Habit Tracker · Stock Watchlist<br>
+            Fitness Log · Email Digest · Sleep Tracker
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <footer class="footer">
+      Built with Claude · Your data stays on your device
+    </footer>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       UNLOCK OVERLAY
+  ══════════════════════════════════════════════ -->
+  <div id="unlock-overlay" class="hidden">
+    <div class="overlay-backdrop" id="unlock-backdrop"></div>
+    <div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+          width:100%;max-width:460px;background:var(--surface);border:1px solid var(--border);
+          border-radius:var(--radius);padding:36px 32px;z-index:201;
+          animation:fadeUp 0.3s ease;max-height:90vh;overflow-y:auto">
+      <h2 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.5rem;margin-bottom:10px">
+        Unlock your AI features
+      </h2>
+      <p style="font-size:.88rem;color:var(--text-mid);line-height:1.7;margin-bottom:14px">
+        Paste an API key from any of these providers. After pasting, switch providers
+        any time in ⚙️ Settings.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;font-size:.82rem">
+        <div style="padding:10px 12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm)">
+          <div style="font-weight:600;color:var(--text);margin-bottom:3px">Anthropic Claude
+            <span style="font-weight:400;color:var(--emerald);font-size:.75rem;margin-left:6px">$5 free credit — most reliable</span>
+          </div>
+          <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener"
+            style="color:var(--accent);font-size:.78rem">console.anthropic.com →</a>
+        </div>
+        <div style="padding:10px 12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm)">
+          <div style="font-weight:600;color:var(--text);margin-bottom:3px">OpenAI GPT-4o
+            <span style="font-weight:400;color:var(--text-dim);font-size:.75rem;margin-left:6px">pay as you go</span>
+          </div>
+          <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener"
+            style="color:var(--accent);font-size:.78rem">platform.openai.com →</a>
+        </div>
+        <div style="padding:10px 12px;background:var(--surface-alt);border:1px solid var(--border);border-radius:var(--radius-sm)">
+          <div style="font-weight:600;color:var(--text);margin-bottom:3px">Google Gemini
+            <span style="font-weight:400;color:var(--text-dim);font-size:.75rem;margin-left:6px">free tier — personal Gmail only</span>
+          </div>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"
+            style="color:var(--accent);font-size:.78rem">aistudio.google.com →</a>
+        </div>
+      </div>
+      <input type="password" class="input" id="unlock-key-input"
+        placeholder="Paste your key here" autocomplete="off" spellcheck="false"
+        style="margin-bottom:12px">
+      <button class="btn btn-primary" id="unlock-activate-btn" style="width:100%">
+        Activate →
+      </button>
+      <div id="unlock-error"
+        style="font-size:.78rem;color:var(--red);margin-top:8px;min-height:16px"></div>
+      <div style="margin-top:16px;font-size:.72rem;color:var(--text-dim);
+            font-family:'DM Mono',monospace;text-align:center;line-height:1.6">
+        Your key is stored only in this browser. Never sent anywhere except your chosen provider.
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       SETTINGS OVERLAY
+  ══════════════════════════════════════════════ -->
+  <div id="settings-overlay" class="hidden">
+    <div class="overlay-backdrop" id="settings-backdrop"></div>
+    <div class="settings-panel">
+      <div class="settings-header">
+        <div class="settings-title font-syne">Settings</div>
+        <button class="btn-icon" id="btn-settings-close">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-label">AI Provider</div>
+        <div class="settings-fields">
+          <div class="field">
+            <label class="field-label">Provider</label>
+            <select class="select" id="settings-provider">
+              <option value="anthropic">Anthropic Claude</option>
+              <option value="openai">OpenAI GPT-4o</option>
+              <option value="gemini">Google Gemini (free tier)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">API Key</label>
+            <input type="password" class="input" id="settings-apikey"
+              placeholder="Paste new key to update" autocomplete="off" spellcheck="false">
+            <span class="text-dim text-xxs font-mono" id="settings-apikey-hint"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="settings-section-label">Personal</div>
+        <div class="settings-fields">
+          <div class="field">
+            <label class="field-label">Your name</label>
+            <input type="text" class="input" id="settings-name" placeholder="Your name">
+          </div>
+          <div class="field">
+            <label class="field-label">Your city</label>
+            <div style="position:relative">
+              <input type="text" class="input" id="settings-city"
+                placeholder="e.g. Austin TX, London UK" autocomplete="off">
+              <div id="settings-city-dropdown" style="display:none;position:absolute;
+                left:0;right:0;top:calc(100% + 4px);z-index:50;background:var(--surface);
+                border:1px solid var(--border);border-radius:var(--radius-sm);
+                overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.35)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="settings-section-label">Cards</div>
+        <div class="settings-fields">
+          <div class="field">
+            <label class="field-label">News topics</label>
+            <input type="text" class="input" id="settings-topics"
+              placeholder="e.g. technology, climate, markets" spellcheck="true">
+          </div>
+          <div class="field">
+            <label class="field-label">Council members</label>
+            <div id="settings-council-tags" style="display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin-bottom:6px"></div>
+            <input type="text" class="input" id="settings-council-input"
+              placeholder="Type a name and press Enter" spellcheck="true">
+          </div>
+          <div class="field">
+            <label class="field-label">Calendar iCal URL</label>
+            <input type="url" class="input" id="settings-calendar"
+              placeholder="https://… (Phase 2 — saved but not used yet)">
+            <span class="text-xxs text-dim font-mono">Direct iCal fetching coming in Phase 2</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-section">
+        <div class="settings-section-label">Data</div>
+        <div class="settings-fields">
+          <button class="btn btn-secondary" id="btn-clear-finance">Clear saved finance data</button>
+          <button class="btn btn-secondary" id="btn-reset-dashboard"
+            style="color:var(--red);border-color:rgba(240,82,82,0.4)">
+            Reset dashboard to defaults
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <button class="btn btn-primary" id="btn-save-settings" style="width:100%">Save settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM STYLES TARGET (AI customization injects here) -->
+  <style id="custom-styles"></style>
+
+  <script>
+  const IS_LOCAL_FILE = location.protocol === 'file:';
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 2: LOCALSTORAGE UTILITIES + CITY DATABASE
+  // ═══════════════════════════════════════════════════════
+
+  const KEYS = {
+    PROVIDER:    'provider',
+    API_KEY:     'apiKey',
+    USER_NAME:   'userName',
+    USER_CITY:   'userCity',
+    CITY_LAT:    'cityLat',
+    CITY_LON:    'cityLon',
+    CITY_TZ:     'cityTimezone',
+    NEWS_TOPICS: 'newsTopics',
+    COUNCIL:     'councilNames',
+    FINANCE:     'financeData',
+    CAL_URL:     'calendarUrl',
+    STYLES:      'customStyles',
+    BRIEFING:    'briefingText',
+    BRIEFING_TS: 'briefingTimestamp',
+  };
+
+  const LS = {
+    get:        k => localStorage.getItem(k),
+    set:        (k, v) => localStorage.setItem(k, String(v)),
+    getJSON:    k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    setJSON:    (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+    getDecoded: k => { const v = localStorage.getItem(k); try { return v ? atob(v) : null; } catch { return v; } },
+    setEncoded: (k, v) => localStorage.setItem(k, btoa(String(v))),
+    remove:     k => localStorage.removeItem(k),
+    clear:      () => localStorage.clear(),
+    isSetup:    () => !!localStorage.getItem(KEYS.API_KEY),
+  };
+
+  // ───────────────────────────────────────────────────────
+  // CITY DATABASE — 63 cities with lat/lon/IANA timezone
+  // ───────────────────────────────────────────────────────
+  const CITIES = [
+    // United States
+    { name: 'New York, NY',         lat:  40.7128,  lon:  -74.0060,  tz: 'America/New_York' },
+    { name: 'Los Angeles, CA',      lat:  34.0522,  lon: -118.2437,  tz: 'America/Los_Angeles' },
+    { name: 'Chicago, IL',          lat:  41.8781,  lon:  -87.6298,  tz: 'America/Chicago' },
+    { name: 'Houston, TX',          lat:  29.7604,  lon:  -95.3698,  tz: 'America/Chicago' },
+    { name: 'Phoenix, AZ',          lat:  33.4484,  lon: -112.0740,  tz: 'America/Phoenix' },
+    { name: 'Philadelphia, PA',     lat:  39.9526,  lon:  -75.1652,  tz: 'America/New_York' },
+    { name: 'San Antonio, TX',      lat:  29.4241,  lon:  -98.4936,  tz: 'America/Chicago' },
+    { name: 'San Diego, CA',        lat:  32.7157,  lon: -117.1611,  tz: 'America/Los_Angeles' },
+    { name: 'Dallas, TX',           lat:  32.7767,  lon:  -96.7970,  tz: 'America/Chicago' },
+    { name: 'San Jose, CA',         lat:  37.3382,  lon: -121.8863,  tz: 'America/Los_Angeles' },
+    { name: 'Austin, TX',           lat:  30.2672,  lon:  -97.7431,  tz: 'America/Chicago' },
+    { name: 'Jacksonville, FL',     lat:  30.3322,  lon:  -81.6557,  tz: 'America/New_York' },
+    { name: 'Fort Worth, TX',       lat:  32.7555,  lon:  -97.3308,  tz: 'America/Chicago' },
+    { name: 'Columbus, OH',         lat:  39.9612,  lon:  -82.9988,  tz: 'America/New_York' },
+    { name: 'Charlotte, NC',        lat:  35.2271,  lon:  -80.8431,  tz: 'America/New_York' },
+    { name: 'San Francisco, CA',    lat:  37.7749,  lon: -122.4194,  tz: 'America/Los_Angeles' },
+    { name: 'Seattle, WA',          lat:  47.6062,  lon: -122.3321,  tz: 'America/Los_Angeles' },
+    { name: 'Denver, CO',           lat:  39.7392,  lon: -104.9903,  tz: 'America/Denver' },
+    { name: 'Nashville, TN',        lat:  36.1627,  lon:  -86.7816,  tz: 'America/Chicago' },
+    { name: 'Oklahoma City, OK',    lat:  35.4676,  lon:  -97.5164,  tz: 'America/Chicago' },
+    { name: 'Washington, DC',       lat:  38.9072,  lon:  -77.0369,  tz: 'America/New_York' },
+    { name: 'Boston, MA',           lat:  42.3601,  lon:  -71.0589,  tz: 'America/New_York' },
+    { name: 'Portland, OR',         lat:  45.5231,  lon: -122.6765,  tz: 'America/Los_Angeles' },
+    { name: 'Las Vegas, NV',        lat:  36.1699,  lon: -115.1398,  tz: 'America/Los_Angeles' },
+    { name: 'Memphis, TN',          lat:  35.1495,  lon:  -90.0490,  tz: 'America/Chicago' },
+    { name: 'Louisville, KY',       lat:  38.2527,  lon:  -85.7585,  tz: 'America/New_York' },
+    { name: 'Milwaukee, WI',        lat:  43.0389,  lon:  -87.9065,  tz: 'America/Chicago' },
+    { name: 'Albuquerque, NM',      lat:  35.0844,  lon: -106.6504,  tz: 'America/Denver' },
+    { name: 'Tucson, AZ',           lat:  32.2226,  lon: -110.9747,  tz: 'America/Phoenix' },
+    { name: 'Fresno, CA',           lat:  36.7378,  lon: -119.7871,  tz: 'America/Los_Angeles' },
+    { name: 'Sacramento, CA',       lat:  38.5816,  lon: -121.4944,  tz: 'America/Los_Angeles' },
+    { name: 'Kansas City, MO',      lat:  39.0997,  lon:  -94.5786,  tz: 'America/Chicago' },
+    { name: 'Atlanta, GA',          lat:  33.7490,  lon:  -84.3880,  tz: 'America/New_York' },
+    { name: 'Baltimore, MD',        lat:  39.2904,  lon:  -76.6122,  tz: 'America/New_York' },
+    { name: 'Raleigh, NC',          lat:  35.7796,  lon:  -78.6382,  tz: 'America/New_York' },
+    { name: 'Miami, FL',            lat:  25.7617,  lon:  -80.1918,  tz: 'America/New_York' },
+    { name: 'Minneapolis, MN',      lat:  44.9778,  lon:  -93.2650,  tz: 'America/Chicago' },
+    { name: 'Tampa, FL',            lat:  27.9506,  lon:  -82.4572,  tz: 'America/New_York' },
+    { name: 'Orlando, FL',          lat:  28.5383,  lon:  -81.3792,  tz: 'America/New_York' },
+    { name: 'Cleveland, OH',        lat:  41.4993,  lon:  -81.6944,  tz: 'America/New_York' },
+    { name: 'Pittsburgh, PA',       lat:  40.4406,  lon:  -79.9959,  tz: 'America/New_York' },
+    { name: 'St. Louis, MO',        lat:  38.6270,  lon:  -90.1994,  tz: 'America/Chicago' },
+    { name: 'Cincinnati, OH',       lat:  39.1031,  lon:  -84.5120,  tz: 'America/New_York' },
+    { name: 'Detroit, MI',          lat:  42.3314,  lon:  -83.0458,  tz: 'America/Detroit' },
+    { name: 'Indianapolis, IN',     lat:  39.7684,  lon:  -86.1581,  tz: 'America/Indiana/Indianapolis' },
+    { name: 'Naples, FL',           lat:  26.1420,  lon:  -81.7948,  tz: 'America/New_York' },
+    { name: 'Richmond, VA',         lat:  37.5407,  lon:  -77.4360,  tz: 'America/New_York' },
+    { name: 'Salt Lake City, UT',   lat:  40.7608,  lon: -111.8910,  tz: 'America/Denver' },
+    { name: 'New Orleans, LA',      lat:  29.9511,  lon:  -90.0715,  tz: 'America/Chicago' },
+    { name: 'Boise, ID',            lat:  43.6150,  lon: -116.2023,  tz: 'America/Boise' },
+    { name: 'Anchorage, AK',        lat:  61.2181,  lon: -149.9003,  tz: 'America/Anchorage' },
+    { name: 'Honolulu, HI',         lat:  21.3069,  lon: -157.8583,  tz: 'Pacific/Honolulu' },
+    { name: 'Colorado Springs, CO', lat:  38.8339,  lon: -104.8214,  tz: 'America/Denver' },
+    { name: 'Virginia Beach, VA',   lat:  36.8529,  lon:  -75.9780,  tz: 'America/New_York' },
+    { name: 'Omaha, NE',            lat:  41.2565,  lon:  -95.9345,  tz: 'America/Chicago' },
+    { name: 'Oakland, CA',          lat:  37.8044,  lon: -122.2712,  tz: 'America/Los_Angeles' },
+    { name: 'Tulsa, OK',            lat:  36.1540,  lon:  -95.9928,  tz: 'America/Chicago' },
+    { name: 'Arlington, TX',        lat:  32.7357,  lon:  -97.1081,  tz: 'America/Chicago' },
+    // International
+    { name: 'London, UK',           lat:  51.5074,  lon:   -0.1278,  tz: 'Europe/London' },
+    { name: 'Toronto, Canada',      lat:  43.6532,  lon:  -79.3832,  tz: 'America/Toronto' },
+    { name: 'Vancouver, Canada',    lat:  49.2827,  lon: -123.1207,  tz: 'America/Vancouver' },
+    { name: 'Sydney, Australia',    lat: -33.8688,  lon:  151.2093,  tz: 'Australia/Sydney' },
+    { name: 'Melbourne, Australia', lat: -37.8136,  lon:  144.9631,  tz: 'Australia/Melbourne' },
+  ];
+
+  // Normalise a string: lowercase, strip commas, collapse spaces
+  const _norm = s => s.toLowerCase().replace(/,/g,' ').replace(/\s+/g,' ').trim();
+
+  // Regex that matches US state full names + abbreviations + country words
+  const _STATE_RE = new RegExp(
+    '\\b(alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|'
+    + 'florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|'
+    + 'maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|'
+    + 'nebraska|nevada|new hampshire|new jersey|new mexico|new york|north carolina|'
+    + 'north dakota|ohio|oklahoma|oregon|pennsylvania|rhode island|south carolina|'
+    + 'south dakota|tennessee|texas|utah|vermont|virginia|washington|west virginia|'
+    + 'wisconsin|wyoming|district of columbia|canada|australia|united kingdom|'
+    + 'al|ak|az|ar|ca|co|ct|de|fl|ga|hi|id|il|in|ia|ks|ky|la|me|md|ma|mi|mn|ms|'
+    + 'mo|mt|ne|nv|nh|nj|nm|ny|nc|nd|oh|ok|or|pa|ri|sc|sd|tn|tx|ut|vt|va|wa|wv|'
+    + 'wi|wy|dc|uk|usa)\\b', 'g'
+  );
+
+  // Search cities; returns up to `limit` matches in priority order
+  function searchCities(query, limit = 5) {
+    if (!query) return [];
+    const q = _norm(query);
+    if (!q) return [];
+
+    // Stripped version: remove state/country words so "naples florida" → "naples"
+    const cityOnly = q.replace(_STATE_RE, '').replace(/\s+/g,' ').trim();
+
+    const seen = new Set();
+    const results = [];
+    const add = c => { if (!seen.has(c.name) && results.length < limit) { seen.add(c.name); results.push(c); } };
+
+    // Five passes in priority order — stops early once limit reached
+    const passes = [
+      c => _norm(c.name).startsWith(q),                                      // full name prefix
+      c => c.name.split(',')[0].toLowerCase().trim().startsWith(q),          // city-part prefix
+      cityOnly && cityOnly !== q
+        ? c => c.name.split(',')[0].toLowerCase().trim().startsWith(cityOnly) // stripped prefix
+        : null,
+      c => _norm(c.name).includes(q),                                         // full name contains
+      cityOnly && cityOnly !== q
+        ? c => c.name.split(',')[0].toLowerCase().includes(cityOnly)           // stripped contains
+        : null,
+    ];
+
+    for (const pass of passes) {
+      if (!pass || results.length >= limit) continue;
+      CITIES.forEach(c => pass(c) && add(c));
+    }
+    return results;
+  }
+
+  // Returns the single best match (used by settings save + weather setup submit)
+  function findCity(query) { return searchCities(query, 1)[0] || null; }
+
+  // Highlight the first word of rawQuery inside cityName
+  function highlightMatch(cityName, rawQuery) {
+    if (!rawQuery) return escHtml(cityName);
+    const first = rawQuery.trim().toLowerCase().split(/[\s,]+/)[0];
+    const idx   = cityName.toLowerCase().indexOf(first);
+    if (idx < 0 || !first) return escHtml(cityName);
+    return escHtml(cityName.slice(0, idx))
+      + `<span style="color:var(--accent)">${escHtml(cityName.slice(idx, idx + first.length))}</span>`
+      + escHtml(cityName.slice(idx + first.length));
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 3: ONBOARDING FLOW
+  // ═══════════════════════════════════════════════════════
+
+  const PROVIDER_INFO = {
+    anthropic: {
+      placeholder: 'sk-ant-api03-…',
+      keyUrl:      'https://console.anthropic.com/settings/keys',
+      keyLabel:    'Anthropic Console → API Keys',
+      subtitle:    'Stored only here. Sent directly to api.anthropic.com — nowhere else.',
+    },
+    openai: {
+      placeholder: 'sk-proj-…',
+      keyUrl:      'https://platform.openai.com/api-keys',
+      keyLabel:    'OpenAI Platform → API Keys',
+      subtitle:    'Stored only here. Sent directly to api.openai.com — nowhere else.',
+    },
+    gemini: {
+      placeholder: 'AIzaSy…',
+      keyUrl:      'https://aistudio.google.com/app/apikey',
+      keyLabel:    'Google AI Studio → Get API Key',
+      subtitle:    'Stored only here. Sent directly to generativelanguage.googleapis.com — nowhere else.',
+    },
+  };
+
+  let selectedProvider = null;
+
+  function initOnboarding() {
+    document.querySelectorAll('.provider-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.provider-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedProvider = btn.dataset.provider;
+        document.getElementById('btn-provider-next').disabled = false;
+      });
+    });
+    document.getElementById('btn-provider-next').addEventListener('click', () => goToStep(2));
+    document.getElementById('btn-key-next').addEventListener('click', handleKeyNext);
+    document.getElementById('btn-name-next').addEventListener('click', handleNameNext);
+    document.getElementById('input-apikey').addEventListener('keydown', e => { if (e.key === 'Enter') handleKeyNext(); });
+    document.getElementById('input-name').addEventListener('keydown',   e => { if (e.key === 'Enter') handleNameNext(); });
+  }
+
+  function goToStep(n) {
+    ['dot-1','dot-2','dot-3'].forEach((id, i) => {
+      const d = document.getElementById(id);
+      d.className = 'step-dot' + (i + 1 < n ? ' done' : i + 1 === n ? ' active' : '');
+    });
+    ['step-provider','step-key','step-name'].forEach(id => document.getElementById(id).classList.add('hidden'));
+
+    if (n === 2) {
+      const info = PROVIDER_INFO[selectedProvider];
+      document.getElementById('key-subtitle').textContent = info.subtitle;
+      document.getElementById('input-apikey').placeholder  = info.placeholder;
+      document.getElementById('key-link').href             = info.keyUrl;
+      document.getElementById('key-link').textContent      = info.keyLabel + ' →';
+      document.getElementById('step-key').classList.remove('hidden');
+      setTimeout(() => document.getElementById('input-apikey').focus(), 50);
+    } else if (n === 3) {
+      document.getElementById('step-name').classList.remove('hidden');
+      setTimeout(() => document.getElementById('input-name').focus(), 50);
+    } else {
+      document.getElementById('step-provider').classList.remove('hidden');
+    }
+  }
+
+  function handleKeyNext() {
+    const key = document.getElementById('input-apikey').value.trim();
+    if (!key) { shakeInput('input-apikey'); return; }
+    LS.set(KEYS.PROVIDER, selectedProvider);
+    LS.setEncoded(KEYS.API_KEY, key);
+    goToStep(3);
+  }
+
+  function handleNameNext() {
+    const name = document.getElementById('input-name').value.trim();
+    if (!name) { shakeInput('input-name'); return; }
+    LS.set(KEYS.USER_NAME, name);
+    launchApp();
+  }
+
+  function shakeInput(id) {
+    const el = document.getElementById(id);
+    el.style.borderColor = 'var(--red)';
+    el.animate(
+      [{ transform:'translateX(-5px)' },{ transform:'translateX(5px)' },
+       { transform:'translateX(-4px)' },{ transform:'translateX(4px)' },
+       { transform:'translateX(0)' }],
+      { duration: 350, easing: 'ease-out' }
+    );
+    setTimeout(() => { el.style.borderColor = ''; }, 1600);
+  }
+
+  function launchApp() {
+    document.getElementById('onboarding').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp();
+  }
+
+  // ─────────────────────────────────────────────────────
+  // BOOT: onboarding vs app
+  // ─────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('onboarding').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp();
+  });
+
+  // Called once on every app launch (first-setup or returning)
+  function initApp() {
+    loadCustomStyles();
+    initHeader();
+    initSettings();
+    initCustomize();
+    initWeather();
+    initCalendar();
+    initFinance();
+    initBriefing();
+    initNews();
+    initCouncil();
+  }
+
+  // Stubs — each replaced in its own section below
+  function loadCustomStyles() {}
+  function initHeader()       {}
+  function initSettings()     {}
+  function initCustomize()    {}
+  function initWeather()      {}
+  function initCalendar()     {}
+  function initFinance()      {}
+  function initBriefing()     {}
+  function initNews()         {}
+  function initCouncil()      {}
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 4: callAI() — PROVIDER ABSTRACTION
+  // ═══════════════════════════════════════════════════════
+
+  // Public entry point — all six cards call only this.
+  // Retries once automatically on transient (non-4xx) errors.
+  async function callAI(prompt, useWebSearch = false, maxTokens = 2048) {
+    const provider = LS.get(KEYS.PROVIDER);
+    const key      = LS.getDecoded(KEYS.API_KEY);
+    if (!provider || !key) {
+      throw new Error('No API key configured. Open ⚙️ Settings to add one.');
+    }
+    if (IS_LOCAL_FILE) {
+      throw new Error('AI features are blocked when opened as a local file. Deploy to a URL — drag index.html to netlify.com/drop for a free hosted link in 30 seconds.');
+    }
+    try {
+      return await _dispatch(provider, key, prompt, useWebSearch, maxTokens);
+    } catch (err) {
+      const isRateLimit = err.message.toLowerCase().includes('rate limit');
+      const isTransient = !err.message.includes('Invalid') && !err.message.includes('key');
+      if (isTransient) {
+        await new Promise(r => setTimeout(r, isRateLimit ? 10000 : 1500));
+        return await _dispatch(provider, key, prompt, useWebSearch, maxTokens);
+      }
+      throw err;
+    }
+  }
+
+  function _dispatch(provider, key, prompt, useWebSearch, maxTokens) {
+    if (provider === 'anthropic') return _callAnthropic(key, prompt, useWebSearch, maxTokens);
+    if (provider === 'openai')    return _callOpenAI(key, prompt, maxTokens);
+    if (provider === 'gemini')    return _callGemini(key, prompt, maxTokens);
+    throw new Error('Unknown provider: ' + provider);
+  }
+
+  async function _callAnthropic(key, prompt, useWebSearch, maxTokens) {
+    const body = {
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }],
+    };
+    const headers = {
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    };
+    if (useWebSearch) {
+      body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
+      headers['anthropic-beta'] = 'web-search-2025-03-05';
+    }
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers, body: JSON.stringify(body), credentials: 'omit',
+    });
+    if (!res.ok) await _throwAPIError(res, 'Anthropic');
+    const data = await res.json();
+    // Collect all text blocks (web search responses interleave tool_use blocks)
+    return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  }
+
+  async function _callOpenAI(key, prompt, maxTokens) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        max_tokens: maxTokens,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+    if (!res.ok) await _throwAPIError(res, 'OpenAI');
+    const data = await res.json();
+    return data.choices[0].message.content;
+  }
+
+  async function _callGemini(key, prompt, maxTokens) {
+    const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+                'gemini-2.0-flash:generateContent?key=' + encodeURIComponent(key);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens },
+      }),
+    });
+    if (!res.ok) await _throwAPIError(res, 'Gemini');
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+  }
+
+  async function _throwAPIError(res, name) {
+    let detail = '';
+    try { detail = (await res.json()).error?.message || ''; } catch {}
+    if (res.status === 401 || res.status === 403)
+      throw new Error(`Invalid ${name} API key — open ⚙️ Settings to update it.`);
+    if (res.status === 429)
+      throw new Error(`${name} 429${detail ? ': ' + detail : ' — rate limit'}.  Click ↻ to retry.`);
+    if (res.status >= 500)
+      throw new Error(`${name} server error (${res.status}). Try again shortly.`);
+    throw new Error(`${name} error ${res.status}${detail ? ': ' + detail : ''}.`);
+  }
+
+  // Strip markdown code fences LLMs sometimes wrap JSON in despite instructions
+  function extractJSON(str) {
+    return str.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  }
+
+  // Render an error message into a card body element
+  function showCardError(el, msg) {
+    el.innerHTML = `<div class="card-error">⚠ ${msg}</div>`;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 5: HEADER + SETTINGS PANEL
+  // ═══════════════════════════════════════════════════════
+
+  // ─── HEADER ───────────────────────────────────────────
+
+  function initHeader() {
+    updateHeaderGreeting();
+    updateHeaderDate();
+    startClock();
+    document.getElementById('btn-customize').addEventListener('click', toggleCustomize);
+    document.getElementById('btn-settings').addEventListener('click', openSettings);
+    if (IS_LOCAL_FILE) {
+      const b = document.getElementById('setup-banner');
+      b.style.display = 'flex';
+      b.innerHTML = `
+        <span style="color:var(--gold)">⚠ Local file — AI features blocked by browser security.</span>
+        <a href="https://app.netlify.com/drop" target="_blank" rel="noopener"
+          class="btn btn-primary btn-sm" style="font-size:.75rem;text-decoration:none">
+          Deploy free in 30 sec →
+        </a>`;
+    } else if (!LS.getDecoded(KEYS.API_KEY)) {
+      showBanner();
+      document.getElementById('btn-banner-cta').addEventListener('click', openUnlockOverlay);
+    }
+  }
+
+  function updateHeaderGreeting() {
+    const name = LS.get(KEYS.USER_NAME) || '';
+    const h = new Date().getHours();
+    const tod = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('header-greeting').textContent = name ? `${tod}, ${name}` : tod;
+  }
+
+  function updateHeaderDate() {
+    document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+    });
+  }
+
+  function startClock() {
+    const el = document.getElementById('header-clock');
+    const tick = () => {
+      const n = new Date();
+      el.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
+        .map(v => String(v).padStart(2, '0')).join(':');
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  // ─── SETTINGS PANEL ───────────────────────────────────
+
+  let _settingsCouncil = [];
+
+  function initSettings() {
+    document.getElementById('btn-settings-close').addEventListener('click', closeSettings);
+    document.getElementById('settings-backdrop').addEventListener('click', closeSettings);
+    document.getElementById('btn-save-settings').addEventListener('click', saveSettings);
+    document.getElementById('btn-clear-finance').addEventListener('click', () => {
+      if (confirm('Clear saved finance data? This cannot be undone.')) {
+        LS.remove(KEYS.FINANCE);
+        document.getElementById('btn-clear-finance').textContent = 'Cleared ✓';
+        setTimeout(() => {
+          document.getElementById('btn-clear-finance').textContent = 'Clear saved finance data';
+        }, 2000);
+      }
+    });
+    document.getElementById('btn-reset-dashboard').addEventListener('click', () => {
+      if (confirm('Reset everything? All settings and saved data will be erased.')) {
+        LS.clear();
+        location.reload();
+      }
+    });
+    document.getElementById('settings-council-input').addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const v = e.target.value.trim();
+      if (v && _settingsCouncil.length < 6 && !_settingsCouncil.includes(v)) {
+        _settingsCouncil.push(v);
+        _renderSettingsTags();
+        e.target.value = '';
+      }
+    });
+    _wireSettingsCityAutocomplete();
+  }
+
+  function _wireSettingsCityAutocomplete() {
+    const input    = document.getElementById('settings-city');
+    const dropdown = document.getElementById('settings-city-dropdown');
+    let hits = [], activeIdx = -1;
+
+    const pick = city => { input.value = city.name; dropdown.style.display = 'none'; };
+
+    const paint = () => {
+      if (!hits.length) { dropdown.style.display = 'none'; return; }
+      const q = input.value.trim();
+      dropdown.innerHTML = hits.map((c, i) => `
+        <div class="city-opt" style="padding:9px 12px;cursor:pointer;font-size:.86rem;
+          border-bottom:1px solid var(--border);transition:background .12s">
+          ${highlightMatch(c.name, q)}
+        </div>`).join('');
+      dropdown.querySelector('.city-opt:last-child').style.borderBottom = 'none';
+      dropdown.style.display = 'block';
+      activeIdx = -1;
+      dropdown.querySelectorAll('.city-opt').forEach((el, i) => {
+        el.addEventListener('mouseenter', () => {
+          dropdown.querySelectorAll('.city-opt').forEach(x => x.style.background = '');
+          el.style.background = 'var(--surface-alt)'; activeIdx = i;
+        });
+        el.addEventListener('mouseleave', () => { el.style.background = ''; });
+        el.addEventListener('mousedown',  e => { e.preventDefault(); pick(hits[i]); });
+      });
+    };
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (!val) { dropdown.style.display = 'none'; return; }
+      hits = searchCities(val); paint();
+    });
+    input.addEventListener('blur',  () => { setTimeout(() => { dropdown.style.display = 'none'; }, 160); });
+    input.addEventListener('focus', () => { if (input.value.trim()) { hits = searchCities(input.value.trim()); paint(); } });
+    input.addEventListener('keydown', e => {
+      const opts = dropdown.querySelectorAll('.city-opt');
+      if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, hits.length - 1); opts.forEach((el, i) => el.style.background = i === activeIdx ? 'var(--surface-alt)' : ''); return; }
+      if (e.key === 'ArrowUp')   { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, -1); opts.forEach((el, i) => el.style.background = i === activeIdx ? 'var(--surface-alt)' : ''); return; }
+      if (e.key === 'Escape')    { dropdown.style.display = 'none'; return; }
+      if (e.key === 'Enter' && activeIdx >= 0) { e.preventDefault(); pick(hits[activeIdx]); }
+    });
+  }
+
+  function openSettings() {
+    _settingsCouncil = LS.getJSON(KEYS.COUNCIL) || [];
+    const rawKey = LS.getDecoded(KEYS.API_KEY);
+    document.getElementById('settings-provider').value = LS.get(KEYS.PROVIDER) || 'gemini';
+    document.getElementById('settings-apikey').value   = '';
+    document.getElementById('settings-apikey-hint').textContent = rawKey
+      ? 'Saved — ends in ···' + rawKey.slice(-4) : 'No key saved';
+    document.getElementById('settings-name').value     = LS.get(KEYS.USER_NAME)   || '';
+    document.getElementById('settings-city').value     = LS.get(KEYS.USER_CITY)   || '';
+    document.getElementById('settings-topics').value   = LS.get(KEYS.NEWS_TOPICS) || '';
+    document.getElementById('settings-calendar').value = LS.get(KEYS.CAL_URL)     || '';
+    _renderSettingsTags();
+    document.getElementById('settings-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function _renderSettingsTags() {
+    const c = document.getElementById('settings-council-tags');
+    c.innerHTML = '';
+    _settingsCouncil.forEach((name, i) => {
+      const t = document.createElement('span');
+      t.className = 'tag';
+      t.innerHTML = `${escHtml(name)} <span class="tag-remove">×</span>`;
+      t.querySelector('.tag-remove').addEventListener('click', () => {
+        _settingsCouncil.splice(i, 1);
+        _renderSettingsTags();
+      });
+      c.appendChild(t);
+    });
+  }
+
+  function saveSettings() {
+    // Flush any name typed but not Enter'd
+    const pending = document.getElementById('settings-council-input').value.trim();
+    if (pending && _settingsCouncil.length < 6 && !_settingsCouncil.includes(pending)) {
+      _settingsCouncil.push(pending);
+      document.getElementById('settings-council-input').value = '';
+    }
+
+    const provider = document.getElementById('settings-provider').value;
+    const newKey   = document.getElementById('settings-apikey').value.trim();
+    const name     = document.getElementById('settings-name').value.trim();
+    const cityStr  = document.getElementById('settings-city').value.trim();
+    const topics   = document.getElementById('settings-topics').value.trim();
+    const calUrl   = document.getElementById('settings-calendar').value.trim();
+
+    LS.set(KEYS.PROVIDER, provider);
+    if (newKey)  LS.setEncoded(KEYS.API_KEY, newKey);
+    if (name)    LS.set(KEYS.USER_NAME, name);
+    if (topics)  LS.set(KEYS.NEWS_TOPICS, topics);
+    if (calUrl)  LS.set(KEYS.CAL_URL, calUrl);
+    LS.setJSON(KEYS.COUNCIL, _settingsCouncil);
+
+    if (cityStr) {
+      const city = findCity(cityStr);
+      if (city) {
+        LS.set(KEYS.USER_CITY, city.name);
+        LS.set(KEYS.CITY_LAT,  String(city.lat));
+        LS.set(KEYS.CITY_LON,  String(city.lon));
+        LS.set(KEYS.CITY_TZ,   city.tz);
+      } else {
+        LS.set(KEYS.USER_CITY, cityStr);
+      }
+    }
+
+    closeSettings();
+    updateHeaderGreeting();
+    updatePageTitle();
+    if (cityStr) initWeather();
+    if (newKey) { hideBanner(); initFinance(); initQuickAnswers(); }
+    // Always refresh these cards — their content depends on topics/names which just changed
+    if (LS.getDecoded(KEYS.API_KEY)) {
+      initBriefing(); initNews(); initCouncil();
+    } else {
+      loadCouncil(); // refresh council setup view with updated names
+    }
+  }
+
+  // XSS-safe text for innerHTML
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Stubs for functions defined in later sections
+  function toggleCustomize()    {}
+  function openCouncilEdit()    {}
+  function newCouncilSession()  {}
+  function regenerateBriefing() {}
+  function refreshNews()        {}
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 6: WEATHER CARD
+  // ═══════════════════════════════════════════════════════
+
+  const WMO = {
+    0:  ['☀️',  'Clear'],          1:  ['🌤️', 'Mainly clear'],
+    2:  ['⛅',  'Partly cloudy'],   3:  ['☁️',  'Overcast'],
+    45: ['🌫️', 'Foggy'],           48: ['🌫️', 'Icy fog'],
+    51: ['🌦️', 'Light drizzle'],   53: ['🌦️', 'Drizzle'],
+    55: ['🌧️', 'Heavy drizzle'],   61: ['🌧️', 'Light rain'],
+    63: ['🌧️', 'Rain'],            65: ['🌧️', 'Heavy rain'],
+    71: ['🌨️', 'Light snow'],      73: ['🌨️', 'Snow'],
+    75: ['❄️',  'Heavy snow'],      77: ['🌨️', 'Snow grains'],
+    80: ['🌦️', 'Light showers'],   81: ['🌦️', 'Showers'],
+    82: ['⛈️',  'Heavy showers'],   85: ['🌨️', 'Snow showers'],
+    86: ['❄️',  'Heavy snow showers'],
+    95: ['⛈️',  'Thunderstorm'],    96: ['⛈️', 'Thunderstorm'],
+    99: ['⛈️',  'Thunderstorm'],
+  };
+
+  function initWeather() {
+    const lat = LS.get(KEYS.CITY_LAT);
+    const lon = LS.get(KEYS.CITY_LON);
+    if (lat && lon) {
+      fetchWeather(parseFloat(lat), parseFloat(lon));
+    } else {
+      renderWeatherSetup();
+    }
+  }
+
+  function renderWeatherSetup() {
+    document.getElementById('weather-body').innerHTML = `
+      <div>
+        <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:14px">
+          Enter your city for live weather.
+        </p>
+        <div style="position:relative">
+          <div style="display:flex;gap:8px">
+            <input type="text" class="input" id="weather-city-input"
+              placeholder="e.g. Austin TX, London UK" style="flex:1" autocomplete="off">
+            <button class="btn btn-primary btn-sm" id="weather-city-btn">Go</button>
+          </div>
+          <div id="city-dropdown" style="display:none;position:absolute;left:0;right:0;
+            top:calc(100% + 4px);z-index:50;background:var(--surface);
+            border:1px solid var(--border);border-radius:var(--radius-sm);
+            overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.35)"></div>
+        </div>
+        <div id="weather-city-err"
+          style="font-size:.78rem;color:var(--red);margin-top:6px;min-height:16px"></div>
+      </div>`;
+
+    const input    = document.getElementById('weather-city-input');
+    const dropdown = document.getElementById('city-dropdown');
+    let hits = [], activeIdx = -1;
+
+    const selectCity = city => {
+      const c = city || findCity(input.value.trim());
+      if (!c) {
+        document.getElementById('weather-city-err').textContent =
+          `"${input.value.trim()}" not found — try a larger nearby city.`;
+        return;
+      }
+      dropdown.style.display = 'none';
+      LS.set(KEYS.USER_CITY, c.name);
+      LS.set(KEYS.CITY_LAT,  String(c.lat));
+      LS.set(KEYS.CITY_LON,  String(c.lon));
+      LS.set(KEYS.CITY_TZ,   c.tz);
+      fetchWeather(c.lat, c.lon);
+    };
+
+    const setActive = idx => {
+      activeIdx = idx;
+      dropdown.querySelectorAll('.city-opt').forEach((el, i) => {
+        el.style.background = i === idx ? 'var(--surface-alt)' : '';
+      });
+    };
+
+    const paintDropdown = () => {
+      if (!hits.length) { dropdown.style.display = 'none'; return; }
+      const q = input.value.trim();
+      dropdown.innerHTML = hits.map((c, i) => `
+        <div class="city-opt" data-i="${i}" style="padding:9px 12px;cursor:pointer;
+          font-size:.86rem;border-bottom:1px solid var(--border);transition:background .12s">
+          ${highlightMatch(c.name, q)}
+        </div>`).join('');
+      // Remove border on last item
+      dropdown.querySelector('.city-opt:last-child').style.borderBottom = 'none';
+      dropdown.style.display = 'block';
+      activeIdx = -1;
+      dropdown.querySelectorAll('.city-opt').forEach((el, i) => {
+        el.addEventListener('mouseenter', () => setActive(i));
+        el.addEventListener('mouseleave', () => { el.style.background = ''; });
+        el.addEventListener('mousedown',  e => { e.preventDefault(); selectCity(hits[i]); });
+      });
+    };
+
+    input.addEventListener('input', () => {
+      const val = input.value.trim();
+      if (!val) { dropdown.style.display = 'none'; hits = []; return; }
+      hits = searchCities(val);
+      paintDropdown();
+    });
+
+    input.addEventListener('blur',  () => { setTimeout(() => { dropdown.style.display = 'none'; }, 160); });
+    input.addEventListener('focus', () => { if (input.value.trim()) { hits = searchCities(input.value.trim()); paintDropdown(); } });
+
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown')  { e.preventDefault(); setActive(Math.min(activeIdx + 1, hits.length - 1)); return; }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); setActive(Math.max(activeIdx - 1, -1)); return; }
+      if (e.key === 'Escape')     { dropdown.style.display = 'none'; activeIdx = -1; return; }
+      if (e.key === 'Enter')      { e.preventDefault(); selectCity(activeIdx >= 0 ? hits[activeIdx] : null); }
+    });
+
+    document.getElementById('weather-city-btn').addEventListener('click', () => selectCity(null));
+    setTimeout(() => input.focus(), 50);
+  }
+
+  async function fetchWeather(lat, lon) {
+    const body = document.getElementById('weather-body');
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    document.getElementById('weather-actions').innerHTML =
+      '<button class="btn-icon" id="btn-weather-refresh" title="Refresh weather">↻</button>';
+    document.getElementById('btn-weather-refresh').addEventListener('click', () => {
+      fetchWeather(parseFloat(LS.get(KEYS.CITY_LAT)), parseFloat(LS.get(KEYS.CITY_LON)));
+    });
+
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?'
+        + `latitude=${lat}&longitude=${lon}`
+        + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,'
+        + 'precipitation_probability,wind_speed_10m,weather_code'
+        + '&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto';
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Open-Meteo error ${res.status}`);
+      const data = await res.json();
+      renderWeatherData(data.current);
+    } catch (err) {
+      showCardError(body, err.message);
+    }
+  }
+
+  function renderWeatherData(c) {
+    const [emoji, label] = WMO[c.weather_code] ?? ['🌡️', 'Unknown'];
+    const precip = c.precipitation_probability != null ? c.precipitation_probability + '%' : '—';
+    const city   = LS.get(KEYS.USER_CITY) || '';
+
+    document.getElementById('weather-body').innerHTML = `
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <span style="font-size:3rem;line-height:1">${emoji}</span>
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;line-height:1">
+              ${Math.round(c.temperature_2m)}°F
+            </div>
+            <div style="font-size:.82rem;color:var(--text-mid)">${label}</div>
+          </div>
+        </div>
+        <div style="font-family:'DM Mono',monospace;font-size:.68rem;color:var(--text-dim);margin-bottom:12px">
+          ${escHtml(city)}
+        </div>
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-label">Feels like</div>
+            <div class="stat-value">${Math.round(c.apparent_temperature)}°</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Humidity</div>
+            <div class="stat-value">${c.relative_humidity_2m}%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Wind</div>
+            <div class="stat-value">${Math.round(c.wind_speed_10m)} mph</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Precip chance</div>
+            <div class="stat-value">${precip}</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 7: CALENDAR CARD
+  // ═══════════════════════════════════════════════════════
+
+  function initCalendar() {
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    const body    = document.getElementById('calendar-body');
+    const calUrl  = LS.get(KEYS.CAL_URL);
+    const today   = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Demo events, always relative to today's date
+    const DEMO = [
+      { d: 0, time: '9:00 AM',  name: 'Team standup',            loc: 'Zoom' },
+      { d: 0, time: '12:30 PM', name: 'Lunch with Sarah',        loc: 'The Blue Plate' },
+      { d: 0, time: '4:00 PM',  name: 'Focus block',             loc: '' },
+      { d: 1, time: '2:00 PM',  name: 'Dentist appointment',     loc: 'Dr. Martinez Dental' },
+      { d: 2, time: '10:00 AM', name: 'Product review',          loc: 'Conference Room A' },
+      { d: 3, time: '3:30 PM',  name: 'Weekly 1:1',              loc: '' },
+      { d: 5, time: '7:00 AM',  name: 'Gym session',             loc: 'Fitness Center' },
+      { d: 6, time: '7:00 PM',  name: 'Birthday dinner',         loc: 'Casa Italiana' },
+    ];
+
+    // Group by day offset
+    const groups = {};
+    DEMO.forEach(ev => {
+      if (!groups[ev.d]) groups[ev.d] = [];
+      groups[ev.d].push(ev);
+    });
+
+    let evHtml = '';
+    Object.keys(groups).sort((a,b) => a - b).forEach(offset => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + Number(offset));
+
+      let label;
+      if (offset == 0) label = 'Today';
+      else if (offset == 1) label = 'Tomorrow';
+      else label = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+
+      evHtml += `<div class="event-day-label">${label}</div>`;
+      groups[offset].forEach(ev => {
+        evHtml += `
+          <div class="event-item">
+            <div class="event-time">${ev.time}</div>
+            <div>
+              <div class="event-name">${escHtml(ev.name)}</div>
+              ${ev.loc ? `<div class="event-location">📍 ${escHtml(ev.loc)}</div>` : ''}
+            </div>
+          </div>`;
+      });
+    });
+
+    const footerHtml = calUrl
+      ? `<div style="margin-top:10px;font-size:.68rem;color:var(--gold);
+              font-family:'DM Mono',monospace">
+           iCal URL saved · live sync in Phase 2
+         </div>`
+      : `<div style="margin-top:10px">
+           <button onclick="openSettings()"
+             style="font-size:.72rem;color:var(--accent);background:none;border:none;
+                    cursor:pointer;font-family:'DM Mono',monospace;padding:0">
+             + Connect your real calendar →
+           </button>
+         </div>`;
+
+    // Wrap in a single div so card-loading's display:flex doesn't split children
+    body.innerHTML = `
+      <div>
+        <div style="max-height:260px;overflow-y:auto;padding-right:2px;
+          scrollbar-width:thin;scrollbar-color:var(--border) transparent">
+          ${evHtml}
+        </div>
+        ${footerHtml}
+      </div>`;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 8: DAILY BRIEFING CARD
+  // ═══════════════════════════════════════════════════════
+
+  const BRIEFING_TTL = 6 * 60 * 60 * 1000; // 6 hours in ms
+
+  function initBriefing() {
+    if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('briefing-body'); return; }
+    const rb = document.getElementById('btn-briefing-refresh');
+    rb.parentNode.replaceChild(rb.cloneNode(true), rb);
+    document.getElementById('btn-briefing-refresh').addEventListener('click', () => generateBriefing(true));
+    loadBriefing();
+  }
+
+  function loadBriefing() {
+    const topics = LS.get(KEYS.NEWS_TOPICS);
+    if (!topics) { renderBriefingSetup(); return; }
+
+    const cached = LS.get(KEYS.BRIEFING);
+    const ts     = Number(LS.get(KEYS.BRIEFING_TS) || 0);
+
+    if (cached && (Date.now() - ts) < BRIEFING_TTL) {
+      renderBriefingText(cached, ts);
+    } else {
+      generateBriefing(false);
+    }
+  }
+
+  function renderBriefingSetup() {
+    document.getElementById('briefing-body').innerHTML = `
+      <div class="card-empty" style="text-align:left;align-items:flex-start">
+        <p style="font-size:.88rem;color:var(--text-mid);line-height:1.65">
+          Add your <strong style="color:var(--text)">news topics</strong> and
+          <strong style="color:var(--text)">council members</strong> in
+          <button onclick="openSettings()"
+            style="color:var(--accent);background:none;border:none;cursor:pointer;
+                   font-size:.88rem;padding:0;text-decoration:underline">
+            ⚙️ Settings
+          </button>
+          to unlock your daily briefing.
+        </p>
+      </div>`;
+  }
+
+  async function generateBriefing(force) {
+    const body    = document.getElementById('briefing-body');
+    const name    = LS.get(KEYS.USER_NAME)   || 'friend';
+    const topics  = LS.get(KEYS.NEWS_TOPICS);
+    const council = (LS.getJSON(KEYS.COUNCIL) || []).join(', ') || 'none set yet';
+
+    if (!topics) { renderBriefingSetup(); return; }
+
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    const now       = new Date();
+    const dayOfWeek = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const fullDate  = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const time      = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+    const prompt = `Write a 4-sentence morning briefing for ${name}.
+Today is ${dayOfWeek}, ${fullDate}. Time: ${time}.
+Their interests: ${topics}.
+Their council members: ${council}.
+
+Sentence 1: what kind of day this is — day of week, time of year, energy appropriate for this moment.
+Sentence 2: something worth knowing or thinking about today related to their specific interests.
+Sentence 3: one practical piece of advice or the right mindset for today — specific not generic.
+Sentence 4: reference one council member by name and what they would say about today specifically.
+
+Rules: Under 100 words total. Conversational and warm.
+Never start with Good morning. Never be generic.
+Use the actual day, date, and their actual interests.
+Name a real council member in sentence 4.`;
+
+    try {
+      const text = await callAI(prompt, false, 512);
+      LS.set(KEYS.BRIEFING,    text);
+      LS.set(KEYS.BRIEFING_TS, String(Date.now()));
+      renderBriefingText(text, Date.now());
+    } catch (err) {
+      showCardError(body, err.message);
+    }
+  }
+
+  function renderBriefingText(text, ts) {
+    const body = document.getElementById('briefing-body');
+    const age  = _briefingAge(ts);
+    const safe = escHtml(text).replace(/\n+/g, ' ');
+
+    body.innerHTML = `
+      <div>
+        <p style="font-size:.92rem;line-height:1.8;color:var(--text)">${safe}</p>
+        <div style="margin-top:12px;font-family:'DM Mono',monospace;font-size:.64rem;
+                    color:var(--text-dim)">${age}</div>
+      </div>`;
+  }
+
+  function _briefingAge(ts) {
+    const mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 2)  return 'just now';
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.floor(mins / 60);
+    return hrs === 1 ? '1 hour ago' : `${hrs} hours ago`;
+  }
+
+  // Real impl — overrides the stub from Section 5
+  function regenerateBriefing() { generateBriefing(true); }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 9: NEWS CARD
+  // ═══════════════════════════════════════════════════════
+
+  function initNews() {
+    if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('news-body'); return; }
+    const rn = document.getElementById('btn-news-refresh');
+    rn.parentNode.replaceChild(rn.cloneNode(true), rn);
+    document.getElementById('btn-news-refresh').addEventListener('click', fetchNews);
+    loadNews();
+  }
+
+  function loadNews() {
+    if (!LS.get(KEYS.NEWS_TOPICS)) {
+      renderNewsSetup();
+    } else {
+      fetchNews();
+    }
+  }
+
+  function renderNewsSetup() {
+    const body = document.getElementById('news-body');
+    body.innerHTML = `
+      <div>
+        <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:14px;line-height:1.6">
+          What topics matter to you?<br>
+          <span style="font-size:.78rem;color:var(--text-dim)">
+            Separate with commas. Used here and in your daily briefing.
+          </span>
+        </p>
+        <div style="display:flex;gap:8px">
+          <input type="text" class="input" id="news-topics-input"
+            placeholder="e.g. AI, climate, markets, geopolitics"
+            style="flex:1" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="news-topics-btn">Go</button>
+        </div>
+        <div id="news-topics-err" style="font-size:.75rem;color:var(--red);margin-top:6px;min-height:14px"></div>
+      </div>`;
+
+    const input = document.getElementById('news-topics-input');
+    const go = () => {
+      const val = input.value.trim();
+      if (!val) { input.style.borderColor = 'var(--red)'; return; }
+      LS.set(KEYS.NEWS_TOPICS, val);
+      fetchNews();
+    };
+    document.getElementById('news-topics-btn').addEventListener('click', go);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    setTimeout(() => input.focus(), 50);
+  }
+
+  async function fetchNews() {
+    const body   = document.getElementById('news-body');
+    const topics = LS.get(KEYS.NEWS_TOPICS);
+    if (!topics) { renderNewsSetup(); return; }
+
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+    document.getElementById('news-timestamp').textContent = '';
+
+    const isAnthropic = LS.get(KEYS.PROVIDER) === 'anthropic';
+
+    const prompt = `You are a sharp news curator. Search the web for today's most important and interesting stories.
+Return exactly 5 stories on these topics: ${topics}.
+
+Return ONLY valid JSON no markdown:
+{
+  "stories": [{
+    "headline": "max 10 words punchy",
+    "summary": "2 sentences what happened and impact",
+    "category": "topic category",
+    "sentiment": "positive|neutral|negative",
+    "whyItMatters": "one sentence on significance",
+    "whoIsAffected": "one sentence on who this impacts",
+    "whatToWatchFor": "one sentence on what happens next"
+  }]
+}
+
+Rules: Real current events only no hallucinations.
+Lead with most consequential story. Mix categories.
+Be specific — name companies, people, numbers.
+If unsure about a fact note it briefly.`;
+
+    try {
+      const raw    = await callAI(prompt, isAnthropic, 1800);
+      const data   = JSON.parse(extractJSON(raw));
+      const stories = Array.isArray(data.stories) ? data.stories : [];
+      renderNewsList(stories, isAnthropic);
+      document.getElementById('news-timestamp').textContent =
+        new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch (err) {
+      showCardError(body, err.message);
+    }
+  }
+
+  function renderNewsList(stories, isAnthropic) {
+    const body = document.getElementById('news-body');
+
+    const webNote = !isAnthropic
+      ? `<div style="margin-bottom:12px;padding:7px 10px;
+            background:rgba(240,180,41,0.06);border:1px solid rgba(240,180,41,0.15);
+            border-radius:var(--radius-sm);font-size:.72rem;color:var(--text-dim);line-height:1.5">
+           ⚡ Live web search requires Anthropic Claude.
+           Results may not reflect today's stories.
+         </div>`
+      : '';
+
+    const SENTIMENTS = {
+      positive: { arrow: '↑', color: 'var(--green)'    },
+      negative: { arrow: '↓', color: 'var(--red)'      },
+      neutral:  { arrow: '→', color: 'var(--text-mid)' },
+    };
+
+    const storiesHtml = stories.map((s, i) => {
+      const sent = SENTIMENTS[s.sentiment] ?? SENTIMENTS.neutral;
+      return `
+        <div class="news-item">
+          <div class="news-item-header" data-idx="${i}" style="cursor:pointer">
+            <span class="news-sentiment" style="color:${sent.color}">${sent.arrow}</span>
+            <span class="news-headline">${escHtml(s.headline)}</span>
+            <span class="badge badge-dim" style="flex-shrink:0;margin-left:6px">
+              ${escHtml(s.category || '')}
+            </span>
+          </div>
+          <div class="news-expand hidden" id="nx-${i}">
+            <p style="color:var(--text);font-size:.84rem;margin-bottom:8px;line-height:1.6">
+              ${escHtml(s.summary || '')}
+            </p>
+            <div class="news-expand-grid">
+              <span class="news-expand-lbl">Why it matters</span>
+              <span style="color:var(--text-mid)">${escHtml(s.whyItMatters || '')}</span>
+              <span class="news-expand-lbl">Who's affected</span>
+              <span style="color:var(--text-mid)">${escHtml(s.whoIsAffected || '')}</span>
+              <span class="news-expand-lbl">Watch for</span>
+              <span style="color:var(--text-mid)">${escHtml(s.whatToWatchFor || '')}</span>
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+
+    body.innerHTML = webNote + (storiesHtml || '<div class="card-empty">No stories returned.</div>');
+
+    body.querySelectorAll('.news-item-header').forEach(hdr => {
+      hdr.addEventListener('click', () => {
+        document.getElementById(`nx-${hdr.dataset.idx}`).classList.toggle('hidden');
+      });
+    });
+  }
+
+  // Real impl — overrides stub from Section 5
+  function refreshNews() { fetchNews(); }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 10: FINANCE CARD
+  // ═══════════════════════════════════════════════════════
+
+  let _csvText      = null;  // raw CSV in memory
+  let _financeResult = null; // parsed analysis
+  let _financeChat   = [];   // [{role, content}] in-session only
+
+  function initFinance() {
+    if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('finance-body'); return; }
+    const saved = LS.getDecoded(KEYS.FINANCE);
+    if (saved) {
+      renderFinanceSavedPrompt(saved);
+    } else {
+      renderFinanceDropZone();
+    }
+  }
+
+  function renderFinanceSavedPrompt(csvText) {
+    const provider = LS.get(KEYS.PROVIDER) || 'your AI';
+    document.getElementById('finance-body').innerHTML = `
+      <div>
+        <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:16px;line-height:1.6">
+          Last month's data is saved.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+          <button class="btn btn-primary" id="btn-finance-reanalyze">Re-analyze saved data</button>
+          <button class="btn btn-secondary" id="btn-finance-newcsv">Upload new CSV</button>
+        </div>
+        <div style="font-size:.7rem;color:var(--text-dim);font-family:'DM Mono',monospace;line-height:1.6">
+          Your financial data goes directly to ${escHtml(provider)}.<br>Nothing stored on any server. Ever.
+        </div>
+      </div>`;
+    document.getElementById('btn-finance-reanalyze').addEventListener('click', () => {
+      _csvText = csvText;
+      analyzeFinance(csvText);
+    });
+    document.getElementById('btn-finance-newcsv').addEventListener('click', renderFinanceDropZone);
+  }
+
+  function renderFinanceDropZone() {
+    const provider = LS.get(KEYS.PROVIDER) || 'your AI';
+    document.getElementById('finance-body').innerHTML = `
+      <div>
+        <div class="drop-zone" id="finance-drop">
+          <span class="drop-zone-icon">📊</span>
+          <div class="drop-zone-text">Drop your bank CSV here<br>
+            <span style="color:var(--text-dim)">or click to browse</span></div>
+        </div>
+        <input type="file" id="finance-file-input" accept=".csv" style="display:none">
+        <div style="margin-top:12px;font-size:.7rem;color:var(--text-dim);
+              font-family:'DM Mono',monospace;line-height:1.6">
+          Your financial data goes directly to ${escHtml(provider)}.<br>Nothing stored on any server. Ever.
+        </div>
+      </div>`;
+    const zone  = document.getElementById('finance-drop');
+    const input = document.getElementById('finance-file-input');
+    zone.addEventListener('click', () => input.click());
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault(); zone.classList.remove('drag-over');
+      if (e.dataTransfer.files[0]) readCSV(e.dataTransfer.files[0]);
+    });
+    input.addEventListener('change', () => { if (input.files[0]) readCSV(input.files[0]); });
+  }
+
+  function readCSV(file) {
+    const reader = new FileReader();
+    reader.onload = e => { _csvText = e.target.result; analyzeFinance(_csvText); };
+    reader.readAsText(file);
+  }
+
+  async function analyzeFinance(csvText) {
+    const body = document.getElementById('finance-body');
+    body.innerHTML = `
+      <div class="card-loading" style="flex-direction:column;gap:12px;min-height:160px">
+        <div class="spinner spinner-lg"></div>
+        <div style="font-size:.82rem;color:var(--text-mid)">Analyzing your transactions…</div>
+      </div>`;
+
+    const MAX = 40000;
+    const data = csvText.length > MAX ? csvText.slice(0, MAX) + '\n…(truncated)' : csvText;
+
+    const prompt = `You are a sharp honest personal financial analyst.
+Analyze these bank transactions and return ONLY valid JSON no markdown no preamble:
+{
+  "summary": {
+    "totalIncome": number,
+    "totalSpending": number,
+    "netCashFlow": number,
+    "avgMonthlySpending": number,
+    "savingsRate": number_or_null,
+    "topInsight": "single most important observation specific and punchy"
+  },
+  "categories": [{"name":"string","total":number,"pct":number,"txCount":number,"trend":"up|down|stable","biggestTransaction":"merchant and amount"}],
+  "insights": [{"type":"warning|opportunity|positive|neutral","title":"max 8 words","detail":"2 sentences specific actual merchants","impact":"dollar or pct or null"}],
+  "subscriptions": [{"name":"service name","amount":number,"frequency":"monthly|annual"}],
+  "questions": ["question1","question2","question3"],
+  "aiReplacesApp": "one sentence vs Mint YNAB Copilot"
+}
+Rules: 4-7 insights mixed types. Reference actual merchant names and exact amounts.
+Identify all recurring subscriptions separately. Calculate savings rate if income present.
+Flag unusual spikes and duplicate charges. Sort categories by total descending.
+
+TRANSACTIONS:
+${data}`;
+
+    try {
+      const raw    = await callAI(prompt, false, 4096);
+      _financeResult = JSON.parse(extractJSON(raw));
+      _financeChat   = [];
+      renderFinanceResults(_financeResult, csvText);
+    } catch (err) {
+      showCardError(body, err.message);
+    }
+  }
+
+  function fmt$(n) {
+    if (n == null) return '—';
+    return '$' + Math.abs(Number(n)).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+
+  function renderFinanceResults(r, csvText) {
+    const body = document.getElementById('finance-body');
+    const s    = r.summary || {};
+    const netOk = (s.netCashFlow || 0) >= 0;
+
+    const summaryHtml = `
+      <div class="finance-summary-row">
+        <div class="stat-item"><div class="stat-label">Income</div>
+          <div class="stat-value" style="color:var(--green)">${fmt$(s.totalIncome)}</div></div>
+        <div class="stat-item"><div class="stat-label">Spending</div>
+          <div class="stat-value" style="color:var(--red)">${fmt$(s.totalSpending)}</div></div>
+        <div class="stat-item"><div class="stat-label">Net cash flow</div>
+          <div class="stat-value" style="color:${netOk?'var(--green)':'var(--red)'}">
+            ${netOk?'+':'−'}${fmt$(s.netCashFlow)}</div></div>
+        <div class="stat-item"><div class="stat-label">Savings rate</div>
+          <div class="stat-value">${s.savingsRate!=null ? s.savingsRate+'%' : '—'}</div></div>
+      </div>
+      ${s.topInsight?`<div style="padding:10px 12px;background:rgba(0,212,255,0.06);
+        border:1px solid rgba(0,212,255,0.15);border-radius:var(--radius-sm);
+        font-size:.84rem;line-height:1.5;margin-bottom:14px">💡 ${escHtml(s.topInsight)}</div>`:''}`;
+
+    const TREND = { up:'↑', down:'↓', stable:'→' };
+    const catsHtml = (r.categories||[]).slice(0,8).map(c => `
+      <div class="finance-category-item">
+        <div class="finance-category-header">
+          <span>${escHtml(c.name)}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:.78rem;color:var(--text-mid)">${fmt$(c.total)}</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${Math.min(c.pct||0,100)}%"></div></div>
+        <div style="font-size:.7rem;color:var(--text-dim);margin-top:3px;display:flex;justify-content:space-between">
+          <span>${c.txCount} tx · ${TREND[c.trend]||'→'}</span>
+          <span style="text-align:right;max-width:55%">${escHtml(c.biggestTransaction||'')}</span>
+        </div>
+      </div>`).join('');
+
+    const ICLASS = { warning:'insight-warning', opportunity:'insight-opportunity',
+                     positive:'insight-positive', neutral:'insight-neutral' };
+    const insightsHtml = (r.insights||[]).map(ins => `
+      <div class="finance-insight ${ICLASS[ins.type]||'insight-neutral'}">
+        <div class="finance-insight-title">${escHtml(ins.title||'')}</div>
+        <div style="font-size:.82rem;line-height:1.5;margin-top:3px">${escHtml(ins.detail||'')}</div>
+        ${ins.impact&&ins.impact!=='null'?`<div style="font-family:'DM Mono',monospace;font-size:.7rem;
+          color:var(--text-mid);margin-top:4px">${escHtml(String(ins.impact))}</div>`:''}
+      </div>`).join('');
+
+    const subsHtml = (r.subscriptions||[]).length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text-dim);
+              letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Subscriptions detected</div>
+        ${(r.subscriptions||[]).map(sub=>`
+          <div style="display:flex;justify-content:space-between;align-items:center;
+                padding:7px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:.85rem">${escHtml(sub.name||'')}</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'DM Mono',monospace;font-size:.8rem;color:var(--text-mid)">${fmt$(sub.amount)}</span>
+              <span class="badge badge-dim">${escHtml(sub.frequency||'')}</span>
+            </div>
+          </div>`).join('')}
+      </div>` : '';
+
+    const qs = r.questions || [];
+    const chipsHtml = qs.length ? `
+      <div style="margin-bottom:14px">
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text-dim);
+              letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Follow-up questions</div>
+        <div class="question-chips" id="finance-chips">
+          ${qs.map((q,i)=>`<button class="question-chip" data-qi="${i}">${escHtml(q)}</button>`).join('')}
+        </div>
+      </div>` : '';
+
+    const aiLine = r.aiReplacesApp ? `
+      <div style="font-size:.72rem;color:var(--text-dim);font-family:'DM Mono',monospace;
+            line-height:1.5;padding:8px 10px;background:var(--surface-alt);
+            border-radius:var(--radius-sm);margin-bottom:14px">${escHtml(r.aiReplacesApp)}</div>` : '';
+
+    const provider = LS.get(KEYS.PROVIDER) || 'your AI';
+    const saveHtml = `
+      <div id="finance-save-row" style="padding:10px 12px;background:var(--surface-alt);
+            border-radius:var(--radius-sm);margin-bottom:14px;display:flex;
+            align-items:center;justify-content:space-between;gap:12px">
+        <div style="font-size:.8rem;color:var(--text-mid)">Save this month's data?</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" id="btn-fsave">Save</button>
+          <button class="btn btn-ghost btn-sm" id="btn-fskip">Skip</button>
+        </div>
+      </div>`;
+
+    const chatHtml = `
+      <div style="margin-bottom:8px">
+        <div style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--text-dim);
+              letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Chat</div>
+        <div class="chat-messages" id="finance-chat"></div>
+        <div class="chat-input-row" style="margin-top:10px">
+          <input type="text" class="input" id="finance-chat-input"
+            placeholder="Ask about your transactions…">
+          <button class="btn btn-primary btn-sm" id="finance-chat-send">Ask</button>
+        </div>
+      </div>`;
+
+    const privacyHtml = `
+      <div style="font-size:.68rem;color:var(--text-dim);font-family:'DM Mono',monospace;line-height:1.6">
+        Your financial data goes directly to ${escHtml(provider)}. Nothing stored on any server. Ever.
+      </div>`;
+
+    const sectionLabel = t => `<div style="font-family:'DM Mono',monospace;font-size:.65rem;
+      color:var(--text-dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">${t}</div>`;
+
+    body.innerHTML =
+      summaryHtml
+      + (catsHtml    ? sectionLabel('Spending by category') + `<div style="margin-bottom:14px">${catsHtml}</div>` : '')
+      + (insightsHtml? sectionLabel('Insights') + `<div style="margin-bottom:14px">${insightsHtml}</div>` : '')
+      + subsHtml + chipsHtml + aiLine + saveHtml + chatHtml + privacyHtml;
+
+    // Wire chips
+    body.querySelectorAll('#finance-chips .question-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        sendFinanceChat(qs[+chip.dataset.qi]);
+        chip.disabled = true; chip.style.opacity = '.45';
+      });
+    });
+
+    // Wire save/skip
+    document.getElementById('btn-fsave').addEventListener('click', () => {
+      LS.setEncoded(KEYS.FINANCE, csvText);
+      document.getElementById('finance-save-row').innerHTML =
+        '<span style="font-size:.78rem;color:var(--emerald)">✓ Saved for next time</span>';
+    });
+    document.getElementById('btn-fskip').addEventListener('click', () => {
+      document.getElementById('finance-save-row').remove();
+    });
+
+    // Wire chat
+    const chatSend = () => {
+      const v = document.getElementById('finance-chat-input').value.trim();
+      if (v) sendFinanceChat(v);
+    };
+    document.getElementById('finance-chat-send').addEventListener('click', chatSend);
+    document.getElementById('finance-chat-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') chatSend();
+    });
+  }
+
+  async function sendFinanceChat(question) {
+    const chatEl = document.getElementById('finance-chat');
+    const inputEl = document.getElementById('finance-chat-input');
+    if (!chatEl) return;
+    if (inputEl) inputEl.value = '';
+
+    _financeChat.push({ role: 'user', content: question });
+    _appendChatBubble(chatEl, question, 'user');
+
+    const tid = 'ft-' + Date.now();
+    chatEl.insertAdjacentHTML('beforeend',
+      `<div id="${tid}" style="display:flex;gap:8px;align-items:center;font-size:.82rem;color:var(--text-dim)">
+        <div class="spinner"></div>Thinking…</div>`);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    const history = _financeChat.slice(0,-1)
+      .map(m => `${m.role==='user'?'User':'Analyst'}: ${m.content}`).join('\n');
+    const snap = _financeResult?.summary
+      ? `Spending $${_financeResult.summary.totalSpending}, net $${_financeResult.summary.netCashFlow}.`
+      : '';
+
+    const prompt = `You are a personal financial analyst. The user shared their bank transactions.
+${snap}${history ? '\nPrior conversation:\n'+history : ''}
+User: ${question}
+Answer specifically and concisely based on their data. Under 120 words.`;
+
+    try {
+      const reply = await callAI(prompt, false, 512);
+      _financeChat.push({ role: 'assistant', content: reply });
+      document.getElementById(tid)?.remove();
+      _appendChatBubble(chatEl, reply, 'ai');
+    } catch (err) {
+      const el = document.getElementById(tid);
+      if (el) el.innerHTML = `<span style="color:var(--red)">${escHtml(err.message)}</span>`;
+    }
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function _appendChatBubble(container, text, role) {
+    const d = document.createElement('div');
+    d.className = `chat-bubble chat-bubble-${role}`;
+    d.textContent = text;
+    container.appendChild(d);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 11: THE COUNCIL CARD
+  // ═══════════════════════════════════════════════════════
+
+  const AVATAR_COLORS = ['#00d4ff','#00e5b0','#f0b429','#a78bfa','#f05252','#10b981'];
+
+  let _councilHistory = []; // in-memory only — cleared on new session
+
+  function initCouncil() {
+    if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('council-body'); return; }
+    ['btn-council-edit','btn-council-new'].forEach(id => {
+      const b = document.getElementById(id);
+      b.parentNode.replaceChild(b.cloneNode(true), b);
+    });
+    document.getElementById('btn-council-edit').addEventListener('click', openCouncilEdit);
+    document.getElementById('btn-council-new').addEventListener('click', newCouncilSession);
+    loadCouncil();
+  }
+
+  function loadCouncil() {
+    const names = LS.getJSON(KEYS.COUNCIL) || [];
+    if (names.length < 3) renderCouncilSetup();
+    else                   renderCouncilChat(names);
+  }
+
+  // ─── SETUP ────────────────────────────────────────────
+
+  const NUDGES = [
+    'Who would you call for a big decision tomorrow?',
+    'Whose book or interview changed how you think?',
+    'Who built something you deeply respect?',
+    'Who handles pressure the way you wish you did?',
+  ];
+
+  function renderCouncilSetup() {
+    const body = document.getElementById('council-body');
+    let draft = LS.getJSON(KEYS.COUNCIL) || [];
+
+    const repaint = () => {
+      const remaining = Math.max(0, 3 - draft.length);
+      body.innerHTML = `
+        <div>
+          <div style="font-size:.95rem;font-weight:600;margin-bottom:6px">Who do you admire?</div>
+          <p style="font-size:.82rem;color:var(--text-mid);line-height:1.65;margin-bottom:14px">
+            Add 3–6 well-known people — thinkers, builders, leaders.
+            Not family or colleagues. They'll advise you whenever you ask.
+          </p>
+          <div id="cdraft-tags" style="display:flex;flex-wrap:wrap;gap:6px;
+                min-height:24px;margin-bottom:10px">
+            ${draft.map((n,i)=>`
+              <span class="tag">${escHtml(n)}
+                <span class="tag-remove" data-i="${i}">×</span>
+              </span>`).join('')}
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <input type="text" class="input" id="council-setup-input"
+              placeholder="Type a name and press Enter" autocomplete="off" style="flex:1"
+              ${draft.length >= 6 ? 'disabled' : ''}>
+          </div>
+          <div class="council-setup-nudges">
+            ${NUDGES.map(n=>`<div class="council-nudge">${escHtml(n)}</div>`).join('')}
+          </div>
+          <button class="btn btn-primary" id="btn-council-build"
+            style="width:100%;margin-top:14px" ${remaining > 0 ? 'disabled' : ''}>
+            ${remaining > 0 ? `Add ${remaining} more to continue` : 'Build my council →'}
+          </button>
+        </div>`;
+
+      body.querySelectorAll('.tag-remove').forEach(x => {
+        x.addEventListener('click', () => { draft.splice(+x.dataset.i, 1); repaint(); });
+      });
+
+      body.querySelectorAll('.council-nudge').forEach(n => {
+        n.addEventListener('click', () => document.getElementById('council-setup-input')?.focus());
+      });
+
+      const inp = document.getElementById('council-setup-input');
+      if (inp) {
+        inp.addEventListener('keydown', e => {
+          if (e.key !== 'Enter') return;
+          e.preventDefault();
+          const v = e.target.value.trim();
+          if (v && draft.length < 6 && !draft.includes(v)) {
+            draft.push(v); repaint();
+            setTimeout(() => document.getElementById('council-setup-input')?.focus(), 20);
+          }
+        });
+        setTimeout(() => inp.focus(), 50);
+      }
+
+      const buildBtn = document.getElementById('btn-council-build');
+      if (buildBtn && !buildBtn.disabled) {
+        buildBtn.addEventListener('click', () => {
+          LS.setJSON(KEYS.COUNCIL, draft);
+          _settingsCouncil = [...draft];
+          _councilHistory  = [];
+          renderCouncilChat(draft);
+        });
+      }
+    };
+
+    repaint();
+  }
+
+  // ─── CHAT ─────────────────────────────────────────────
+
+  function renderCouncilChat(names) {
+    const body = document.getElementById('council-body');
+
+    const avatarHtml = names.slice(0,6).map((n,i) => {
+      const initials = n.split(' ').map(p=>p[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="avatar" title="${escHtml(n)}"
+        style="background:${AVATAR_COLORS[i%AVATAR_COLORS.length]}">${initials}</div>`;
+    }).join('');
+
+    const hintHtml = _councilHistory.length === 0
+      ? `<p style="font-size:.78rem;color:var(--text-dim);margin-bottom:10px;line-height:1.6">
+           Ask anything — a decision, a relationship, a career move, a creative block.
+         </p>` : '';
+
+    body.innerHTML = `
+      <div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${avatarHtml}</div>
+        ${hintHtml}
+        <div class="chat-messages" id="council-chat" style="min-height:60px"></div>
+        <div class="chat-input-row" style="margin-top:10px">
+          <input type="text" class="input" id="council-input"
+            placeholder="Ask your council…" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="council-send">Ask</button>
+        </div>
+      </div>`;
+
+    const chatEl = document.getElementById('council-chat');
+
+    // Replay history
+    _councilHistory.forEach(m => _appendCouncilBubble(chatEl, m.content, m.role, names));
+    if (_councilHistory.length) chatEl.scrollTop = chatEl.scrollHeight;
+
+    const send = () => {
+      const inp = document.getElementById('council-input');
+      const v   = inp?.value.trim();
+      if (v) { inp.value = ''; askCouncil(v, names); }
+    };
+    document.getElementById('council-send').addEventListener('click', send);
+    document.getElementById('council-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') send();
+    });
+  }
+
+  async function askCouncil(question, names) {
+    const chatEl   = document.getElementById('council-chat');
+    const userName = LS.get(KEYS.USER_NAME) || 'you';
+
+    _councilHistory.push({ role: 'user', content: question });
+    _appendCouncilBubble(chatEl, question, 'user', names);
+
+    const tid = 'cv-' + Date.now();
+    chatEl.insertAdjacentHTML('beforeend',
+      `<div id="${tid}" style="display:flex;gap:8px;align-items:center;
+        font-size:.82rem;color:var(--text-dim)">
+        <div class="spinner"></div>Council convening…</div>`);
+    chatEl.scrollTop = chatEl.scrollHeight;
+
+    const isFirst = _councilHistory.filter(m => m.role === 'user').length === 1;
+    const councilStr = names.join(', ');
+
+    let prompt;
+    if (isFirst) {
+      prompt = `You are a personal advisory council for ${userName}.
+
+Your advisors are: ${councilStr}.
+
+For each advisor draw on everything publicly known — their books, interviews, philosophies, decision frameworks, communication style, how they actually talk.
+Make each voice genuinely distinct and recognizable.
+Do not invent things they never said. Speak authentically in their voice based on what is known.
+
+HOW YOU RESPOND:
+1. Identify 2-3 advisors most relevant to this question
+2. For each give their perspective in 1-3 sentences labeled **[Full Name]:** in their authentic voice
+3. Show disagreement between advisors if it exists — tension is useful
+4. For decision questions: state the decision in one sentence, name 2-3 real options, assess reversibility
+5. For relationship questions: lead with most empathetic advisor
+6. For money questions: lead with most analytical advisor
+7. Direct and specific — no generic platitudes
+8. Never give same advisor first word twice in a session
+9. On follow-ups reference earlier: 'Building on what we discussed...'
+10. Always close with this exact line: **The move here is:** [specific action to take today]
+11. Flag reusable patterns: 📋 Pattern spotted: [one sentence]
+
+TONE: Trusted mentor. Seen it before. Confident not preachy. Human. Skip the basics.
+
+Question: ${question}`;
+    } else {
+      const history = _councilHistory.slice(0,-1)
+        .map(m => (m.role==='user' ? 'User: ' : 'Council: ') + m.content).join('\n\n');
+      prompt = `You are ${userName}'s personal advisory council. Advisors: ${councilStr}.
+
+Prior conversation:
+${history}
+
+New question: ${question}
+
+Follow the same format. Reference earlier points with "Building on what we discussed..."
+Always end with **The move here is:** [specific action today].
+Flag patterns with 📋 Pattern spotted: [one sentence].`;
+    }
+
+    try {
+      const reply = await callAI(prompt, false, 1024);
+      _councilHistory.push({ role: 'assistant', content: reply });
+      document.getElementById(tid)?.remove();
+      _appendCouncilBubble(chatEl, reply, 'ai', names);
+    } catch (err) {
+      const el = document.getElementById(tid);
+      if (el) el.innerHTML = `<span style="color:var(--red)">${escHtml(err.message)}</span>`;
+    }
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  function _appendCouncilBubble(container, text, role, names) {
+    const div = document.createElement('div');
+    if (role === 'user') {
+      div.className = 'chat-bubble chat-bubble-user';
+      div.textContent = text;
+    } else {
+      div.className = 'chat-bubble chat-bubble-ai';
+      div.innerHTML = _renderCouncilMd(text, names);
+    }
+    container.appendChild(div);
+  }
+
+  function _renderCouncilMd(text, names) {
+    // 1. Escape HTML first
+    let h = escHtml(text);
+
+    // 2. Pull out **The move here is:** line before general bold (order matters)
+    h = h.replace(/\*\*The move here is:\*\*([^\n]+)/gi,
+      `</p><div class="council-move"><strong>The move here is:</strong>$1</div><p>`);
+
+    // 3. Pull out 📋 Pattern spotted: line
+    h = h.replace(/📋 Pattern spotted:([^\n]+)/g,
+      `</p><div class="council-pattern">📋 <strong>Pattern spotted:</strong>$1</div><p>`);
+
+    // 4. Remaining **bold**
+    h = h.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+
+    // 5. Paragraphs and line breaks
+    h = h.replace(/\n\n+/g, '</p><p>').replace(/\n/g, '<br>');
+
+    return `<p>${h}</p>`;
+  }
+
+  // Real impls — override stubs from Section 5
+  function openCouncilEdit() { openSettings(); }
+
+  function newCouncilSession() {
+    _councilHistory = [];
+    const names = LS.getJSON(KEYS.COUNCIL) || [];
+    if (names.length >= 3) renderCouncilChat(names);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 12: AI DESIGN CUSTOMIZATION
+  // ═══════════════════════════════════════════════════════
+
+  // Real impl — overrides stub from Section 5
+  function loadCustomStyles() {
+    const css = LS.get(KEYS.STYLES);
+    if (css) document.getElementById('custom-styles').textContent = css;
+  }
+
+  function initCustomize() {
+    document.getElementById('btn-apply-styles').addEventListener('click',  applyCustomStyles);
+    document.getElementById('btn-reset-styles').addEventListener('click',  resetCustomStyles);
+    document.getElementById('btn-cancel-styles').addEventListener('click', () => {
+      document.getElementById('customize-panel').classList.add('hidden');
+    });
+
+    // Close panel on click outside
+    document.addEventListener('click', e => {
+      const panel   = document.getElementById('customize-panel');
+      const trigger = document.getElementById('btn-customize');
+      if (!panel.classList.contains('hidden') &&
+          !panel.contains(e.target) &&
+          e.target !== trigger) {
+        panel.classList.add('hidden');
+      }
+    });
+  }
+
+  // Real impl — overrides stub from Section 5
+  function toggleCustomize() {
+    const panel = document.getElementById('customize-panel');
+    panel.classList.toggle('hidden');
+    if (!panel.classList.contains('hidden')) {
+      setTimeout(() => document.getElementById('customize-input')?.focus(), 50);
+    }
+  }
+
+  async function applyCustomStyles() {
+    const textarea = document.getElementById('customize-input');
+    const userReq  = textarea.value.trim();
+    if (!userReq) { textarea.style.borderColor = 'var(--red)'; return; }
+    textarea.style.borderColor = '';
+
+    const spinner  = document.getElementById('customize-spinner');
+    const applyBtn = document.getElementById('btn-apply-styles');
+
+    spinner.classList.remove('hidden');
+    spinner.innerHTML =
+      '<div class="spinner" style="flex-shrink:0"></div><span>Generating styles…</span>';
+    applyBtn.disabled = true;
+
+    const prompt = `The user wants to customize their dashboard appearance.
+Generate ONLY valid CSS overrides.
+Do not generate HTML or JavaScript.
+Do not change any IDs or class names.
+Only generate safe visual CSS: colors, fonts, spacing, border-radius, opacity, backgrounds, shadows.
+User request: ${userReq}
+Return only the CSS rules, no explanation, no markdown.`;
+
+    try {
+      const raw = await callAI(prompt, false, 1024);
+      // Strip any markdown fences the model adds despite instructions
+      const css = raw
+        .replace(/^```(?:css)?\s*/i, '')
+        .replace(/\s*```\s*$/, '')
+        .trim();
+
+      document.getElementById('custom-styles').textContent = css;
+      LS.set(KEYS.STYLES, css);
+
+      spinner.classList.add('hidden');
+      document.getElementById('customize-panel').classList.add('hidden');
+      textarea.value = '';
+    } catch (err) {
+      spinner.innerHTML =
+        `<span style="color:var(--red);font-size:.75rem">⚠ ${escHtml(err.message)}</span>`;
+    } finally {
+      applyBtn.disabled = false;
+    }
+  }
+
+  function resetCustomStyles() {
+    document.getElementById('custom-styles').textContent = '';
+    LS.remove(KEYS.STYLES);
+    document.getElementById('customize-input').value = '';
+    document.getElementById('customize-panel').classList.add('hidden');
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // SECTION 13: FINAL POLISH
+  // ═══════════════════════════════════════════════════════
+
+  // ─── UNLOCK / LOCKED-CARD HELPERS ────────────────────
+
+  function renderLockedCard(bodyId) {
+    const body = document.getElementById(bodyId);
+    if (!body) return;
+    body.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+            min-height:120px;gap:8px;text-align:center;cursor:pointer"
+           id="locked-inner-${bodyId}">
+        <div style="font-size:1.5rem">🔒</div>
+        <div style="font-size:.85rem;font-weight:600;color:var(--text)">AI feature</div>
+        <div style="font-size:.76rem;color:var(--text-mid)">API key required</div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:4px;font-size:.76rem">
+          Add API key →
+        </button>
+      </div>`;
+    body.querySelector('[id^="locked-inner"]').addEventListener('click', openUnlockOverlay);
+  }
+
+  function showBanner() {
+    const b = document.getElementById('setup-banner');
+    if (b) b.style.display = 'flex';
+  }
+
+  function hideBanner() {
+    const b = document.getElementById('setup-banner');
+    if (b) b.style.display = 'none';
+  }
+
+  function openUnlockOverlay() {
+    document.getElementById('unlock-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('unlock-key-input')?.focus(), 80);
+  }
+
+  function closeUnlockOverlay() {
+    document.getElementById('unlock-overlay').classList.add('hidden');
+    document.getElementById('unlock-error').textContent = '';
+    document.getElementById('unlock-key-input').value = '';
+    document.body.style.overflow = '';
+  }
+
+  function activateAIKey(key) {
+    if (!LS.get(KEYS.PROVIDER)) LS.set(KEYS.PROVIDER, 'gemini');
+    LS.setEncoded(KEYS.API_KEY, key);
+    closeUnlockOverlay();
+    hideBanner();
+    initBriefing(); initNews(); initFinance(); initCouncil(); initQuickAnswers();
+  }
+
+  // Wire unlock overlay (runs after DOM ready — script is at bottom of body)
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('unlock-backdrop')
+      .addEventListener('click', closeUnlockOverlay);
+    document.getElementById('unlock-activate-btn')
+      .addEventListener('click', () => {
+        const key = document.getElementById('unlock-key-input').value.trim();
+        if (!key) {
+          document.getElementById('unlock-error').textContent = 'Please paste your API key first.';
+          return;
+        }
+        document.getElementById('unlock-error').textContent = '';
+        activateAIKey(key);
+      });
+    document.getElementById('unlock-key-input')
+      .addEventListener('keydown', e => {
+        if (e.key === 'Enter') document.getElementById('unlock-activate-btn').click();
+      });
+  });
+
+  // Escape closes any open panel
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('settings-overlay').classList.contains('hidden')) closeSettings();
+    if (!document.getElementById('customize-panel').classList.contains('hidden'))
+      document.getElementById('customize-panel').classList.add('hidden');
+  });
+
+  // Page title stays in sync with name
+  function updatePageTitle() {
+    const name = LS.get(KEYS.USER_NAME);
+    document.title = name ? `${name}'s Dashboard` : 'My Dashboard';
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // QUICK ANSWERS CARD
+  // ═══════════════════════════════════════════════════════
+
+  const QA_STARTERS = [
+    'How do I find my family\'s birth records?',
+    'What does "eminent domain" mean?',
+    'How do I practice conversational Spanish?',
+    'Explain my DNA ethnicity results',
+  ];
+
+  function initQuickAnswers() {
+    if (!LS.getDecoded(KEYS.API_KEY)) { renderLockedCard('qa-body'); return; }
+    const body = document.getElementById('qa-body');
+
+    body.innerHTML = `
+      <div>
+        <div class="chat-input-row" style="margin-bottom:12px">
+          <input type="text" class="input" id="qa-input"
+            placeholder="Ask anything…" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="qa-ask">Ask</button>
+        </div>
+        <div class="question-chips" id="qa-chips">
+          ${QA_STARTERS.map((q, i) =>
+            `<button class="question-chip" data-qi="${i}">${escHtml(q)}</button>`
+          ).join('')}
+        </div>
+        <div id="qa-answer"></div>
+      </div>`;
+
+    const send = () => {
+      const v = document.getElementById('qa-input').value.trim();
+      if (v) askQuestion(v);
+    };
+    document.getElementById('qa-ask').addEventListener('click', send);
+    document.getElementById('qa-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') send();
+    });
+    document.querySelectorAll('#qa-chips .question-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const q = QA_STARTERS[+chip.dataset.qi];
+        document.getElementById('qa-input').value = q;
+        askQuestion(q);
+      });
+    });
+  }
+
+  async function askQuestion(question) {
+    const answerEl = document.getElementById('qa-answer');
+    if (!answerEl) return;
+
+    answerEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;color:var(--text-dim);
+            font-size:.82rem;margin-top:10px">
+        <div class="spinner"></div>Thinking…
+      </div>`;
+
+    const prompt = `Answer this question directly and concisely.
+Maximum 150 words. No preamble. Just the answer.
+For professional topics give educational information and note when a professional is needed.
+Question: ${question}`;
+
+    try {
+      const answer = await callAI(prompt, false, 400);
+      const preview = question.length > 55 ? question.slice(0, 55) + '…' : question;
+
+      answerEl.innerHTML = `
+        <div style="margin-top:10px;padding:12px 14px;background:var(--surface-alt);
+              border:1px solid var(--border);border-radius:var(--radius-sm);
+              font-size:.88rem;line-height:1.75;color:var(--text)">
+          ${escHtml(answer).replace(/\n+/g, '<br>')}
+        </div>
+        <div style="margin-top:8px;display:flex;align-items:center;
+              justify-content:space-between;gap:8px">
+          <span style="font-family:'DM Mono',monospace;font-size:.62rem;
+                color:var(--text-dim);flex:1">${escHtml(preview)}</span>
+          <button class="btn btn-ghost btn-sm" id="qa-clear"
+            style="font-size:.75rem;flex-shrink:0">Ask another ↩</button>
+        </div>`;
+
+      document.getElementById('qa-clear').addEventListener('click', () => {
+        answerEl.innerHTML = '';
+        const inp = document.getElementById('qa-input');
+        if (inp) { inp.value = ''; inp.focus(); }
+      });
+    } catch (err) {
+      showCardError(answerEl, err.message);
+    }
+  }
+
+  // Final initApp — includes all cards
+  function initApp() {
+    loadCustomStyles();
+    updatePageTitle();
+    initHeader();
+    initSettings();
+    initCustomize();
+    initWeather();
+    initCalendar();
+    initFinance();
+    initBriefing();
+    setTimeout(() => initNews(), 3000);
+    initCouncil();
+    initQuickAnswers();
+  }
+  </script>
+
+</body>
+</html>
