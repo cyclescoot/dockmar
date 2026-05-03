@@ -1795,8 +1795,7 @@
     const el = document.getElementById('header-clock');
     const tick = () => {
       const n = new Date();
-      el.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
-        .map(v => String(v).padStart(2, '0')).join(':');
+      el.textContent = n.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
       const dc = document.getElementById('header-clockdate');
       if (dc) dc.textContent = n.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     };
@@ -3176,7 +3175,7 @@ Answer specifically and concisely based on their data. Under 150 words.`;
 
     body.innerHTML = `
       <div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${avatarHtml}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">${avatarHtml}</div>
         ${hintHtml}
         <div class="chat-messages" id="council-chat" style="min-height:60px"></div>
         <div class="chat-input-row" style="margin-top:10px">
