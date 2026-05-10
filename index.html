@@ -1368,7 +1368,7 @@
     NEWS_TOPICS: 'newsTopics',
     COUNCIL:     'councilNames',
     FINANCE:     'financeData',
-    CALENDAR_URL:'calendarUrl',
+    CALENDAR_URLS:'calendarUrls',
     STYLES:      'customStyles',
     BRIEFING:        'briefingText',
     BRIEFING_TS:     'briefingTimestamp',
@@ -2355,97 +2355,149 @@
   // ═══════════════════════════════════════════════════════
 
   function initCalendar() {
-    const url = LS.get(KEYS.CALENDAR_URL);
-    if (url) {
-      fetchCalendar(url);
+    const raw = LS.get(KEYS.CALENDAR_URLS);
+    let urls = [];
+    if (raw) {
+      try { urls = JSON.parse(raw); } catch { urls = [raw]; LS.set(KEYS.CALENDAR_URLS, JSON.stringify(urls)); }
+    }
+    if (urls.length > 0) {
+      fetchCalendars(urls);
     } else {
       renderCalendarSetup();
     }
   }
 
+  function getCalendarUrls() {
+    const raw = LS.get(KEYS.CALENDAR_URLS);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return [raw]; }
+  }
+
+  function saveCalendarUrls(urls) {
+    LS.set(KEYS.CALENDAR_URLS, JSON.stringify(urls));
+  }
+
   function renderCalendarSetup() {
     const body = document.getElementById('calendar-body');
+    const urls = getCalendarUrls();
+    const listHtml = urls.length > 0 ? `
+      <div style="margin-bottom:14px">
+        ${urls.map((u, i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:.78rem;color:var(--text-mid);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(u)}">${escHtml(u.replace(/^https?:\/\//, '').substring(0, 55))}${u.length > 62 ? '…' : ''}</div>
+            <button class="btn-icon cal-remove-btn" data-idx="${i}" title="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>`).join('')}
+      </div>` : '';
+
     body.innerHTML = `
       <div>
-        <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:14px;line-height:1.6">
-          Paste a public iCal URL to see today's schedule.
+        ${listHtml}
+        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+          ${urls.length === 0 ? 'Paste an iCal URL (.ics) to see your next 7 days.' : 'Add another iCal URL:'}
         </p>
         <div style="display:flex;flex-direction:column;gap:8px">
           <input type="text" class="input" id="calendar-url-input"
-            placeholder="https://.../basic.ics" autocomplete="off">
-          <button class="btn btn-primary btn-sm" id="calendar-url-btn">Save</button>
+            placeholder="https://…/basic.ics" autocomplete="off">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="calendar-url-add" style="flex:1">Add</button>
+            ${urls.length > 0 ? '<button class="btn btn-sm" id="calendar-url-done" style="flex:1">Done</button>' : ''}
+          </div>
         </div>
         <div id="calendar-url-err" style="font-size:.78rem;color:var(--red);margin-top:6px;min-height:16px"></div>
       </div>`;
 
+    body.querySelectorAll('.cal-remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const updated = getCalendarUrls().filter((_, i) => i !== idx);
+        saveCalendarUrls(updated);
+        renderCalendarSetup();
+      });
+    });
+
     const input = document.getElementById('calendar-url-input');
-    const go = () => {
+    const err = document.getElementById('calendar-url-err');
+
+    const addUrl = () => {
       const val = input.value.trim();
       if (!val) { input.style.borderColor = 'var(--red)'; return; }
-      LS.set(KEYS.CALENDAR_URL, val);
-      fetchCalendar(val);
+      if (!val.startsWith('http')) { err.textContent = 'URL must start with http or https'; return; }
+      const updated = [...getCalendarUrls(), val];
+      saveCalendarUrls(updated);
+      fetchCalendars(updated);
     };
 
-    document.getElementById('calendar-url-btn').addEventListener('click', go);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    document.getElementById('calendar-url-add').addEventListener('click', addUrl);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') addUrl(); });
+
+    const doneBtn = document.getElementById('calendar-url-done');
+    if (doneBtn) doneBtn.addEventListener('click', () => fetchCalendars(getCalendarUrls()));
   }
 
-  async function fetchCalendar(url) {
-    const body = document.getElementById('calendar-body');
-    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
-
+  function ensureCalendarActionButtons(urls) {
     const wa = document.getElementById('calendar-actions');
+
     if (!wa.querySelector('#btn-calendar-refresh')) {
       wa.insertAdjacentHTML('afterbegin',
         '<button class="btn-icon" id="btn-calendar-refresh" title="Refresh calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>');
     }
-    document.getElementById('btn-calendar-refresh').addEventListener('click', () => {
-      fetchCalendar(LS.get(KEYS.CALENDAR_URL));
-    });
+    document.getElementById('btn-calendar-refresh').onclick = () => fetchCalendars(getCalendarUrls());
+
+    if (!wa.querySelector('#btn-calendar-settings')) {
+      wa.insertAdjacentHTML('afterbegin',
+        '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URLs"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
+    }
+    document.getElementById('btn-calendar-settings').onclick = () => renderCalendarSetup();
+  }
+
+  async function fetchCalendars(urls) {
+    const body = document.getElementById('calendar-body');
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    ensureCalendarActionButtons(urls);
 
     try {
-      const proxyUrl = '/.netlify/functions/calendar-proxy?url=' + encodeURIComponent(url);
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error('Failed to fetch calendar');
-      const text = await res.text();
-
-      const events = parseICS(text);
-      renderCalendarEvents(events);
+      const fetches = urls.map(url =>
+        fetch('/.netlify/functions/calendar-proxy?url=' + encodeURIComponent(url))
+          .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+      );
+      const texts = await Promise.all(fetches);
+      const allEvents = texts.flatMap(t => parseICS(t));
+      // Deduplicate by uid+dtstart
+      const seen = new Set();
+      const unique = allEvents.filter(e => {
+        const key = (e.uid || e.summary || '') + '|' + (e.dtstart ? e.dtstart.getTime() : '');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      unique.sort((a, b) => a.dtstart - b.dtstart);
+      renderCalendarEvents(unique);
     } catch (err) {
       showCardError(body, err.message);
-      // Give them a way to reset
-      const wa = document.getElementById('calendar-actions');
-      if (!wa.querySelector('#btn-calendar-settings')) {
-        wa.insertAdjacentHTML('afterbegin', '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
-        document.getElementById('btn-calendar-settings').addEventListener('click', () => {
-          LS.remove(KEYS.CALENDAR_URL);
-          initCalendar();
-        });
-      }
+      ensureCalendarActionButtons(urls);
     }
   }
 
   function parseICS(icsString) {
-    // Unfold continuation lines (iCal spec: lines > 75 chars wrap with \r\n + space/tab)
     const unfolded = icsString.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
     const lines = unfolded.split(/\r?\n/);
     const events = [];
     let currentEvent = null;
     const now = new Date();
 
-    // We want events for today
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(startOfToday);
-    endOfToday.setDate(endOfToday.getDate() + 1);
+    const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const windowEnd = new Date(windowStart);
+    windowEnd.setDate(windowEnd.getDate() + 7);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const line of lines) {
       if (line.startsWith('BEGIN:VEVENT')) {
         currentEvent = {};
       } else if (line.startsWith('END:VEVENT')) {
         if (currentEvent && currentEvent.dtstart) {
-          // Simplistic check: if event starts today (ignores recurrences for this basic impl)
-          if (currentEvent.dtstart >= startOfToday && currentEvent.dtstart < endOfToday) {
+          const start = currentEvent.dtstart;
+          const end = currentEvent.dtend || start;
+          if (start < windowEnd && end >= windowStart) {
             events.push(currentEvent);
           }
         }
@@ -2453,23 +2505,22 @@
       } else if (currentEvent) {
         if (line.startsWith('SUMMARY:')) {
           currentEvent.summary = line.substring(8);
+        } else if (line.startsWith('UID:')) {
+          currentEvent.uid = line.substring(4);
         } else if (line.startsWith('DTSTART')) {
-          // Basic DTSTART parser
-          const val = line.split(':')[1];
-          if (val) currentEvent.dtstart = parseICalDate(val);
+          const val = line.includes(';') ? line.split(':').slice(1).join(':') : line.split(':')[1];
+          if (val) { const v = val.trim(); currentEvent.dtstart = parseICalDate(v); if (v.length <= 8) currentEvent.allDay = true; }
         } else if (line.startsWith('DTEND')) {
-          const val = line.split(':')[1];
-          if (val) currentEvent.dtend = parseICalDate(val);
+          const val = line.includes(';') ? line.split(':').slice(1).join(':') : line.split(':')[1];
+          if (val) currentEvent.dtend = parseICalDate(val.trim());
         }
       }
     }
 
-    // Sort events by start time
-    return events.sort((a, b) => a.dtstart - b.dtstart);
+    return events;
   }
 
   function parseICalDate(dateStr) {
-    // Format: YYYYMMDDTHHMMSSZ or YYYYMMDDTHHMMSS
     if (!dateStr || dateStr.length < 8) return new Date();
     const year = parseInt(dateStr.substring(0, 4));
     const month = parseInt(dateStr.substring(4, 6)) - 1;
@@ -2485,45 +2536,58 @@
         return new Date(year, month, day, hour, min, sec);
       }
     }
-    // All day event
     return new Date(year, month, day);
   }
 
   function renderCalendarEvents(events) {
     const body = document.getElementById('calendar-body');
-    const wa = document.getElementById('calendar-actions');
-    if (!wa.querySelector('#btn-calendar-settings')) {
-      wa.insertAdjacentHTML('afterbegin', '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
-      document.getElementById('btn-calendar-settings').addEventListener('click', () => {
-        LS.remove(KEYS.CALENDAR_URL);
-        initCalendar();
-      });
-    }
 
     if (events.length === 0) {
-      body.innerHTML = '<div class="card-empty">No events scheduled for today.</div>';
+      body.innerHTML = '<div class="card-empty">No events in the next 7 days.</div>';
       return;
     }
 
-    const eventsHtml = events.map(e => {
-      const timeStr = e.dtstart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return `
-        <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
-          <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--text-mid);width:65px;flex-shrink:0;">
-            ${timeStr}
-          </div>
-          <div style="font-size:0.88rem;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${escHtml(e.summary || 'Busy')}
-          </div>
-        </div>
-      `;
-    }).join('');
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const tomorrowStr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
 
-    body.innerHTML = `
-      <div style="max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
-        ${eventsHtml}
-      </div>
-    `;
+    // Group by day
+    const groups = new Map();
+    for (const e of events) {
+      const key = e.dtstart.toDateString();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
+    }
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    let html = '';
+    for (const [dateStr, dayEvents] of groups) {
+      const d = new Date(dateStr);
+      let label;
+      if (dateStr === todayStr) label = 'Today';
+      else if (dateStr === tomorrowStr) label = 'Tomorrow';
+      else label = dayNames[d.getDay()];
+      const dateLabel = `${monthNames[d.getMonth()]} ${d.getDate()}`;
+
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:10px 0 4px;border-bottom:1px solid var(--border);">
+        <span style="font-size:.75rem;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;">${label}</span>
+        <span style="font-size:.72rem;color:var(--text-dim)">${dateLabel}</span>
+      </div>`;
+
+      for (const e of dayEvents) {
+        const timeStr = e.allDay
+          ? '<span style="color:var(--text-dim);font-size:.72rem">all day</span>'
+          : `<span style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:var(--text-mid)">${e.dtstart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:5px 0 5px 4px;">
+          <div style="width:60px;flex-shrink:0;">${timeStr}</div>
+          <div style="font-size:.88rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(e.summary || 'Busy')}</div>
+        </div>`;
+      }
+    }
+
+    body.innerHTML = `<div style="max-height:260px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">${html}</div>`;
   }
 
   // ═══════════════════════════════════════════════════════
