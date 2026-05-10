@@ -2426,7 +2426,9 @@
   }
 
   function parseICS(icsString) {
-    const lines = icsString.split(/\r?\n/);
+    // Unfold continuation lines (iCal spec: lines > 75 chars wrap with \r\n + space/tab)
+    const unfolded = icsString.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+    const lines = unfolded.split(/\r?\n/);
     const events = [];
     let currentEvent = null;
     const now = new Date();
