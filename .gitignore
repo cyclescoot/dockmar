@@ -1,7 +1,8 @@
 # Development files
 *-v1.html
 *-v2.html
-dashboard-setup.html
+dashboard-setup*.html
+my-dashboard*.html
 *.bak
 
 # Test data
