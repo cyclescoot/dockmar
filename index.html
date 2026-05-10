@@ -1037,6 +1037,16 @@
           <div id="weather-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
 
+        <!-- 2. CALENDAR -->
+        <div class="card" id="card-calendar">
+          <div class="card-header">
+            <span class="card-title">Calendar</span>
+            <div class="card-actions" id="calendar-actions">
+              <button class="btn-icon" id="btn-calendar-expand" title="Expand"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+            </div>
+          </div>
+          <div id="calendar-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
 
         <!-- 3. FINANCE -->
         <div class="card" id="card-finance">
@@ -1358,6 +1368,7 @@
     NEWS_TOPICS: 'newsTopics',
     COUNCIL:     'councilNames',
     FINANCE:     'financeData',
+    CALENDAR_URL:'calendarUrl',
     STYLES:      'customStyles',
     BRIEFING:        'briefingText',
     BRIEFING_TS:     'briefingTimestamp',
@@ -1711,6 +1722,7 @@
     initSettings();
     initCustomize();
     initWeather();
+    initCalendar();
     initFinance();
     initBriefing();
     initNews();
@@ -1723,6 +1735,7 @@
   function initSettings()     {}
   function initCustomize()    {}
   function initWeather()      {}
+  function initCalendar()     {}
   function initFinance()      {}
   function initBriefing()     {}
   function initNews()         {}
@@ -2338,14 +2351,179 @@
   }
 
   // ═══════════════════════════════════════════════════════
-  // SECTION 7: CALENDAR CARD — removed in v1
-  // Re-add when iCal CORS is resolved (proxy or backend)
+  // SECTION 7: CALENDAR CARD
   // ═══════════════════════════════════════════════════════
 
+  function initCalendar() {
+    const url = LS.get(KEYS.CALENDAR_URL);
+    if (url) {
+      fetchCalendar(url);
+    } else {
+      renderCalendarSetup();
+    }
+  }
 
+  function renderCalendarSetup() {
+    const body = document.getElementById('calendar-body');
+    body.innerHTML = `
+      <div>
+        <p style="font-size:.88rem;color:var(--text-mid);margin-bottom:14px;line-height:1.6">
+          Paste a public iCal URL to see today's schedule.
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input type="text" class="input" id="calendar-url-input"
+            placeholder="https://.../basic.ics" autocomplete="off">
+          <button class="btn btn-primary btn-sm" id="calendar-url-btn">Save</button>
+        </div>
+        <div id="calendar-url-err" style="font-size:.78rem;color:var(--red);margin-top:6px;min-height:16px"></div>
+      </div>`;
 
+    const input = document.getElementById('calendar-url-input');
+    const go = () => {
+      const val = input.value.trim();
+      if (!val) { input.style.borderColor = 'var(--red)'; return; }
+      LS.set(KEYS.CALENDAR_URL, val);
+      fetchCalendar(val);
+    };
 
+    document.getElementById('calendar-url-btn').addEventListener('click', go);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+  }
 
+  async function fetchCalendar(url) {
+    const body = document.getElementById('calendar-body');
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    const wa = document.getElementById('calendar-actions');
+    if (!wa.querySelector('#btn-calendar-refresh')) {
+      wa.insertAdjacentHTML('afterbegin',
+        '<button class="btn-icon" id="btn-calendar-refresh" title="Refresh calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>');
+    }
+    document.getElementById('btn-calendar-refresh').addEventListener('click', () => {
+      fetchCalendar(LS.get(KEYS.CALENDAR_URL));
+    });
+
+    try {
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+      const res = await fetch(proxyUrl);
+      if (!res.ok) throw new Error('Failed to fetch calendar');
+      const data = await res.json();
+      if (!data.contents) throw new Error('No calendar data received');
+
+      const events = parseICS(data.contents);
+      renderCalendarEvents(events);
+    } catch (err) {
+      showCardError(body, err.message);
+      // Give them a way to reset
+      const wa = document.getElementById('calendar-actions');
+      if (!wa.querySelector('#btn-calendar-settings')) {
+        wa.insertAdjacentHTML('afterbegin', '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
+        document.getElementById('btn-calendar-settings').addEventListener('click', () => {
+          LS.remove(KEYS.CALENDAR_URL);
+          initCalendar();
+        });
+      }
+    }
+  }
+
+  function parseICS(icsString) {
+    const lines = icsString.split(/\r?\n/);
+    const events = [];
+    let currentEvent = null;
+    const now = new Date();
+
+    // We want events for today
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.startsWith('BEGIN:VEVENT')) {
+        currentEvent = {};
+      } else if (line.startsWith('END:VEVENT')) {
+        if (currentEvent && currentEvent.dtstart) {
+          // Simplistic check: if event starts today (ignores recurrences for this basic impl)
+          if (currentEvent.dtstart >= startOfToday && currentEvent.dtstart < endOfToday) {
+            events.push(currentEvent);
+          }
+        }
+        currentEvent = null;
+      } else if (currentEvent) {
+        if (line.startsWith('SUMMARY:')) {
+          currentEvent.summary = line.substring(8);
+        } else if (line.startsWith('DTSTART')) {
+          // Basic DTSTART parser
+          const val = line.split(':')[1];
+          if (val) currentEvent.dtstart = parseICalDate(val);
+        } else if (line.startsWith('DTEND')) {
+          const val = line.split(':')[1];
+          if (val) currentEvent.dtend = parseICalDate(val);
+        }
+      }
+    }
+
+    // Sort events by start time
+    return events.sort((a, b) => a.dtstart - b.dtstart);
+  }
+
+  function parseICalDate(dateStr) {
+    // Format: YYYYMMDDTHHMMSSZ or YYYYMMDDTHHMMSS
+    if (!dateStr || dateStr.length < 8) return new Date();
+    const year = parseInt(dateStr.substring(0, 4));
+    const month = parseInt(dateStr.substring(4, 6)) - 1;
+    const day = parseInt(dateStr.substring(6, 8));
+
+    if (dateStr.length >= 15) {
+      const hour = parseInt(dateStr.substring(9, 11));
+      const min = parseInt(dateStr.substring(11, 13));
+      const sec = parseInt(dateStr.substring(13, 15));
+      if (dateStr.endsWith('Z')) {
+        return new Date(Date.UTC(year, month, day, hour, min, sec));
+      } else {
+        return new Date(year, month, day, hour, min, sec);
+      }
+    }
+    // All day event
+    return new Date(year, month, day);
+  }
+
+  function renderCalendarEvents(events) {
+    const body = document.getElementById('calendar-body');
+    const wa = document.getElementById('calendar-actions');
+    if (!wa.querySelector('#btn-calendar-settings')) {
+      wa.insertAdjacentHTML('afterbegin', '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URL"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
+      document.getElementById('btn-calendar-settings').addEventListener('click', () => {
+        LS.remove(KEYS.CALENDAR_URL);
+        initCalendar();
+      });
+    }
+
+    if (events.length === 0) {
+      body.innerHTML = '<div class="card-empty">No events scheduled for today.</div>';
+      return;
+    }
+
+    const eventsHtml = events.map(e => {
+      const timeStr = e.dtstart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--text-mid);width:65px;flex-shrink:0;">
+            ${timeStr}
+          </div>
+          <div style="font-size:0.88rem;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${escHtml(e.summary || 'Busy')}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    body.innerHTML = `
+      <div style="max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">
+        ${eventsHtml}
+      </div>
+    `;
+  }
 
   // ═══════════════════════════════════════════════════════
   // SECTION 8: DAILY BRIEFING CARD
@@ -3598,6 +3776,7 @@ Return only the CSS rules, no explanation, no markdown.`;
   function initExpandButtons() {
     const map = [
       ['btn-weather-expand',  'Weather',       'weather-body'],
+      ['btn-calendar-expand', 'Calendar',      'calendar-body'],
       ['btn-finance-expand',  'Finance',       'finance-body'],
       ['btn-briefing-expand', 'Daily Briefing','briefing-body'],
       ['btn-news-expand',     'News',          'news-body'],
@@ -3882,6 +4061,7 @@ Question: ${question}`;
     initSettings();
     initCustomize();
     initWeather();
+    initCalendar();
     initFinance();
     initBriefing();
     setTimeout(() => initNews(), 3000);
