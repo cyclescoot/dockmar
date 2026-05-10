@@ -1037,6 +1037,16 @@
           <div id="weather-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
         </div>
 
+        <!-- 2. CALENDAR -->
+        <div class="card" id="card-calendar">
+          <div class="card-header">
+            <span class="card-title">Calendar</span>
+            <div class="card-actions" id="calendar-actions">
+              <button class="btn-icon" id="btn-calendar-expand" title="Expand"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></button>
+            </div>
+          </div>
+          <div id="calendar-body" class="card-loading"><div class="spinner spinner-lg"></div></div>
+        </div>
 
         <!-- 3. FINANCE -->
         <div class="card" id="card-finance">
@@ -1358,6 +1368,7 @@
     NEWS_TOPICS: 'newsTopics',
     COUNCIL:     'councilNames',
     FINANCE:     'financeData',
+    CALENDAR_URLS:'calendarUrls',
     STYLES:      'customStyles',
     BRIEFING:        'briefingText',
     BRIEFING_TS:     'briefingTimestamp',
@@ -1711,6 +1722,7 @@
     initSettings();
     initCustomize();
     initWeather();
+    initCalendar();
     initFinance();
     initBriefing();
     initNews();
@@ -1723,6 +1735,7 @@
   function initSettings()     {}
   function initCustomize()    {}
   function initWeather()      {}
+  function initCalendar()     {}
   function initFinance()      {}
   function initBriefing()     {}
   function initNews()         {}
@@ -2338,14 +2351,244 @@
   }
 
   // ═══════════════════════════════════════════════════════
-  // SECTION 7: CALENDAR CARD — removed in v1
-  // Re-add when iCal CORS is resolved (proxy or backend)
+  // SECTION 7: CALENDAR CARD
   // ═══════════════════════════════════════════════════════
 
+  function initCalendar() {
+    const raw = LS.get(KEYS.CALENDAR_URLS);
+    let urls = [];
+    if (raw) {
+      try { urls = JSON.parse(raw); } catch { urls = [raw]; LS.set(KEYS.CALENDAR_URLS, JSON.stringify(urls)); }
+    }
+    if (urls.length > 0) {
+      fetchCalendars(urls);
+    } else {
+      renderCalendarSetup();
+    }
+  }
 
+  function getCalendarUrls() {
+    const raw = LS.get(KEYS.CALENDAR_URLS);
+    if (!raw) return [];
+    try { return JSON.parse(raw); } catch { return [raw]; }
+  }
 
+  function saveCalendarUrls(urls) {
+    LS.set(KEYS.CALENDAR_URLS, JSON.stringify(urls));
+  }
 
+  function renderCalendarSetup() {
+    const body = document.getElementById('calendar-body');
+    const urls = getCalendarUrls();
+    const listHtml = urls.length > 0 ? `
+      <div style="margin-bottom:14px">
+        ${urls.map((u, i) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+            <div style="font-size:.78rem;color:var(--text-mid);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escHtml(u)}">${escHtml(u.replace(/^https?:\/\//, '').substring(0, 55))}${u.length > 62 ? '…' : ''}</div>
+            <button class="btn-icon cal-remove-btn" data-idx="${i}" title="Remove"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          </div>`).join('')}
+      </div>` : '';
 
+    body.innerHTML = `
+      <div>
+        ${listHtml}
+        <p style="font-size:.85rem;color:var(--text-mid);margin-bottom:10px;line-height:1.5">
+          ${urls.length === 0 ? 'Paste an iCal URL (.ics) to see your next 7 days.' : 'Add another iCal URL:'}
+        </p>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <input type="text" class="input" id="calendar-url-input"
+            placeholder="https://…/basic.ics" autocomplete="off">
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary btn-sm" id="calendar-url-add" style="flex:1">Add</button>
+            ${urls.length > 0 ? '<button class="btn btn-sm" id="calendar-url-done" style="flex:1">Done</button>' : ''}
+          </div>
+        </div>
+        <div id="calendar-url-err" style="font-size:.78rem;color:var(--red);margin-top:6px;min-height:16px"></div>
+      </div>`;
+
+    body.querySelectorAll('.cal-remove-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        const updated = getCalendarUrls().filter((_, i) => i !== idx);
+        saveCalendarUrls(updated);
+        renderCalendarSetup();
+      });
+    });
+
+    const input = document.getElementById('calendar-url-input');
+    const err = document.getElementById('calendar-url-err');
+
+    const addUrl = () => {
+      const val = input.value.trim();
+      if (!val) { input.style.borderColor = 'var(--red)'; return; }
+      if (!val.startsWith('http')) { err.textContent = 'URL must start with http or https'; return; }
+      const updated = [...getCalendarUrls(), val];
+      saveCalendarUrls(updated);
+      fetchCalendars(updated);
+    };
+
+    document.getElementById('calendar-url-add').addEventListener('click', addUrl);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') addUrl(); });
+
+    const doneBtn = document.getElementById('calendar-url-done');
+    if (doneBtn) doneBtn.addEventListener('click', () => fetchCalendars(getCalendarUrls()));
+  }
+
+  function ensureCalendarActionButtons(urls) {
+    const wa = document.getElementById('calendar-actions');
+
+    if (!wa.querySelector('#btn-calendar-refresh')) {
+      wa.insertAdjacentHTML('afterbegin',
+        '<button class="btn-icon" id="btn-calendar-refresh" title="Refresh calendar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>');
+    }
+    document.getElementById('btn-calendar-refresh').onclick = () => fetchCalendars(getCalendarUrls());
+
+    if (!wa.querySelector('#btn-calendar-settings')) {
+      wa.insertAdjacentHTML('afterbegin',
+        '<button class="btn-icon" id="btn-calendar-settings" title="Edit calendar URLs"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></button>');
+    }
+    document.getElementById('btn-calendar-settings').onclick = () => renderCalendarSetup();
+  }
+
+  async function fetchCalendars(urls) {
+    const body = document.getElementById('calendar-body');
+    body.innerHTML = '<div class="card-loading"><div class="spinner spinner-lg"></div></div>';
+
+    ensureCalendarActionButtons(urls);
+
+    try {
+      const fetches = urls.map(url =>
+        fetch('/.netlify/functions/calendar-proxy?url=' + encodeURIComponent(url))
+          .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+      );
+      const texts = await Promise.all(fetches);
+      const allEvents = texts.flatMap(t => parseICS(t));
+      // Deduplicate by uid+dtstart
+      const seen = new Set();
+      const unique = allEvents.filter(e => {
+        const key = (e.uid || e.summary || '') + '|' + (e.dtstart ? e.dtstart.getTime() : '');
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      unique.sort((a, b) => a.dtstart - b.dtstart);
+      renderCalendarEvents(unique);
+    } catch (err) {
+      showCardError(body, err.message);
+      ensureCalendarActionButtons(urls);
+    }
+  }
+
+  function parseICS(icsString) {
+    const unfolded = icsString.replace(/\r\n[ \t]/g, '').replace(/\n[ \t]/g, '');
+    const lines = unfolded.split(/\r?\n/);
+    const events = [];
+    let currentEvent = null;
+    const now = new Date();
+
+    const windowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const windowEnd = new Date(windowStart);
+    windowEnd.setDate(windowEnd.getDate() + 7);
+
+    for (const line of lines) {
+      if (line.startsWith('BEGIN:VEVENT')) {
+        currentEvent = {};
+      } else if (line.startsWith('END:VEVENT')) {
+        if (currentEvent && currentEvent.dtstart) {
+          const start = currentEvent.dtstart;
+          const end = currentEvent.dtend || start;
+          if (start < windowEnd && end >= windowStart) {
+            events.push(currentEvent);
+          }
+        }
+        currentEvent = null;
+      } else if (currentEvent) {
+        if (line.startsWith('SUMMARY:')) {
+          currentEvent.summary = line.substring(8);
+        } else if (line.startsWith('UID:')) {
+          currentEvent.uid = line.substring(4);
+        } else if (line.startsWith('DTSTART')) {
+          const val = line.includes(';') ? line.split(':').slice(1).join(':') : line.split(':')[1];
+          if (val) { const v = val.trim(); currentEvent.dtstart = parseICalDate(v); if (v.length <= 8) currentEvent.allDay = true; }
+        } else if (line.startsWith('DTEND')) {
+          const val = line.includes(';') ? line.split(':').slice(1).join(':') : line.split(':')[1];
+          if (val) currentEvent.dtend = parseICalDate(val.trim());
+        }
+      }
+    }
+
+    return events;
+  }
+
+  function parseICalDate(dateStr) {
+    if (!dateStr || dateStr.length < 8) return new Date();
+    const year = parseInt(dateStr.substring(0, 4));
+    const month = parseInt(dateStr.substring(4, 6)) - 1;
+    const day = parseInt(dateStr.substring(6, 8));
+
+    if (dateStr.length >= 15) {
+      const hour = parseInt(dateStr.substring(9, 11));
+      const min = parseInt(dateStr.substring(11, 13));
+      const sec = parseInt(dateStr.substring(13, 15));
+      if (dateStr.endsWith('Z')) {
+        return new Date(Date.UTC(year, month, day, hour, min, sec));
+      } else {
+        return new Date(year, month, day, hour, min, sec);
+      }
+    }
+    return new Date(year, month, day);
+  }
+
+  function renderCalendarEvents(events) {
+    const body = document.getElementById('calendar-body');
+
+    if (events.length === 0) {
+      body.innerHTML = '<div class="card-empty">No events in the next 7 days.</div>';
+      return;
+    }
+
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const tomorrowStr = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toDateString();
+
+    // Group by day
+    const groups = new Map();
+    for (const e of events) {
+      const key = e.dtstart.toDateString();
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(e);
+    }
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    let html = '';
+    for (const [dateStr, dayEvents] of groups) {
+      const d = new Date(dateStr);
+      let label;
+      if (dateStr === todayStr) label = 'Today';
+      else if (dateStr === tomorrowStr) label = 'Tomorrow';
+      else label = dayNames[d.getDay()];
+      const dateLabel = `${monthNames[d.getMonth()]} ${d.getDate()}`;
+
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:10px 0 4px;border-bottom:1px solid var(--border);">
+        <span style="font-size:.75rem;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;">${label}</span>
+        <span style="font-size:.72rem;color:var(--text-dim)">${dateLabel}</span>
+      </div>`;
+
+      for (const e of dayEvents) {
+        const timeStr = e.allDay
+          ? '<span style="color:var(--text-dim);font-size:.72rem">all day</span>'
+          : `<span style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:var(--text-mid)">${e.dtstart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+        html += `<div style="display:flex;align-items:center;gap:10px;padding:5px 0 5px 4px;">
+          <div style="width:60px;flex-shrink:0;">${timeStr}</div>
+          <div style="font-size:.88rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escHtml(e.summary || 'Busy')}</div>
+        </div>`;
+      }
+    }
+
+    body.innerHTML = `<div style="max-height:260px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;padding-right:4px;">${html}</div>`;
+  }
 
   // ═══════════════════════════════════════════════════════
   // SECTION 8: DAILY BRIEFING CARD
@@ -3598,6 +3841,7 @@ Return only the CSS rules, no explanation, no markdown.`;
   function initExpandButtons() {
     const map = [
       ['btn-weather-expand',  'Weather',       'weather-body'],
+      ['btn-calendar-expand', 'Calendar',      'calendar-body'],
       ['btn-finance-expand',  'Finance',       'finance-body'],
       ['btn-briefing-expand', 'Daily Briefing','briefing-body'],
       ['btn-news-expand',     'News',          'news-body'],
@@ -3882,6 +4126,7 @@ Question: ${question}`;
     initSettings();
     initCustomize();
     initWeather();
+    initCalendar();
     initFinance();
     initBriefing();
     setTimeout(() => initNews(), 3000);
